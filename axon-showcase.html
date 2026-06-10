@@ -683,7 +683,7 @@
   /* ── RESPONSIVE ── */
   @media (max-width: 768px) {
     nav { padding: 16px 20px; }
-    .nav-links { display: none; }
+    .nav-links a:not(.nav-live) { display: none; }
     section { padding: 80px 20px; }
     .problem-grid, .dataset-stats, .tier-section, .screenshot-grid, .challenge-cols { grid-template-columns: 1fr; }
     .metrics-grid { grid-template-columns: repeat(2, 1fr); }
