@@ -110,15 +110,36 @@
   .hazard.move{ animation:hazardMove var(--life,8s) linear forwards; }
   @keyframes hazardMove{ from{left:108%;} to{left:-22%;} }
 
+  /* ── machine-vision target acquisition ── */
   .det-box{
-    position:absolute; inset:-8% -6% -6% -6%; border:3px solid var(--scan); border-radius:6px;
-    opacity:0; box-shadow:0 0 0 2px #0b2b3933, 0 0 22px #00d4ff66;
+    --c:var(--scan);
+    position:absolute; inset:-8% -6% -6% -6%; border-radius:6px; opacity:0;
   }
-  .det-box.amber{ border-color:var(--amber); box-shadow:0 0 18px #ff9e2c66; }
-  .det-box.red{ border-color:var(--red); box-shadow:0 0 24px #ff4d6d88; }
-  .det-box.good{ border-color:var(--good); box-shadow:0 0 18px #2ec4a666; }
-  .hazard.detected .det-box{ animation:boxPop .5s both; }
-  @keyframes boxPop{ 0%{opacity:0;transform:scale(1.25)} 60%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+  .det-box.amber{ --c:var(--amber); } .det-box.red{ --c:var(--red); } .det-box.good{ --c:var(--good); }
+  /* corner brackets (8 gradients = 4 L-shaped corners) */
+  .det-box::before{
+    content:''; position:absolute; inset:0; opacity:0;
+    background:
+      linear-gradient(var(--c),var(--c)) 0 0/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 0/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 0/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 0/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 100%/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 100%/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 100%/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 100%/3px 16px no-repeat;
+    filter:drop-shadow(0 0 6px var(--c));
+  }
+  /* connecting frame */
+  .det-box::after{
+    content:''; position:absolute; inset:0; border:2px solid var(--c); border-radius:6px;
+    opacity:0; transform:scale(1.06); box-shadow:0 0 18px -2px var(--c), inset 0 0 12px -6px var(--c);
+  }
+  .hazard.detected .det-box{ opacity:1; }
+  .hazard.detected .det-box::before{ animation:cornerIn .55s both; }
+  .hazard.detected .det-box::after{ animation:frameIn .55s .22s both; }
+  @keyframes cornerIn{ 0%{opacity:0;transform:scale(1.3)} 45%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+  @keyframes frameIn{ 0%{opacity:0;transform:scale(1.06)} 100%{opacity:1;transform:scale(1)} }
   .det-tag{
     position:absolute; top:-30px; left:-3px; font-family:'JetBrains Mono',monospace;
     font-size:13px; font-weight:700; padding:2px 9px; border-radius:5px; white-space:nowrap;
@@ -126,7 +147,7 @@
   }
   .det-tag.amber{ background:var(--amber); } .det-tag.red{ background:var(--red); color:#fff; }
   .det-tag.good{ background:var(--good); } .det-tag.scan{ background:var(--scan); }
-  .hazard.detected .det-tag{ animation:fadeIn .4s .12s both; }
+  .hazard.detected .det-tag{ animation:fadeIn .35s .18s both; }
   @keyframes fadeIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
   /* distance ring ping on detect */
   .ping{ position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%;
@@ -134,14 +155,38 @@
   .hazard.detected .ping{ animation:ping .9s ease-out .1s 2; }
   @keyframes ping{ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.4)} }
 
-  /* ───────── CORRIDOR ZONE FLASH ───────── */
-  .zone-flash{
-    position:absolute; left:18%; bottom:0; width:64%; height:46%; z-index:6; opacity:0;
-    background:linear-gradient(0deg,#ff4d6d44,#ff4d6d00);
-    clip-path:polygon(35% 0,65% 0,100% 100%,0 100%);
+  /* ───────── FLOOR-MAPPED COLLISION CORRIDOR ───────── */
+  .floor-corridor{
+    position:absolute; left:50%; transform:translateX(-50%); bottom:19%;
+    width:60%; height:27%; z-index:6; pointer-events:none;
+    clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);
+    display:flex; flex-direction:column;
+    background:repeating-linear-gradient(90deg,#ffffff14 0 1px,transparent 1px 34px),
+              repeating-linear-gradient(0deg,#ffffff10 0 1px,transparent 1px 26px);
+    opacity:.85;
   }
-  .zone-flash.on{ animation:zoneFlash 2.2s ease both; }
-  @keyframes zoneFlash{ 0%{opacity:0} 20%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+  .fz{ flex:1; position:relative; transition:background .35s ease, box-shadow .35s ease;
+    border-top:1px solid #ffffff22; }
+  .fz.far  { background:#2ec4a61f; }
+  .fz.mid  { background:#ff9e2c1f; }
+  .fz.near { background:#ff4d6d1f; }
+  .fz.lit.far { background:#2ec4a6aa; box-shadow:inset 0 0 40px #2ec4a6; }
+  .fz.lit.mid { background:#ff9e2cb0; box-shadow:inset 0 0 40px #ff9e2c; }
+  .fz.lit.near{ background:#ff4d6dc0; box-shadow:inset 0 0 46px #ff4d6d; animation:zonePulse .7s ease-in-out infinite; }
+  @keyframes zonePulse{ 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.35)} }
+  .fz-label{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:2px;
+    color:#ffffff; opacity:0; transition:opacity .3s; text-shadow:0 1px 4px #0008; }
+  .fz.lit .fz-label{ opacity:1; }
+
+  /* ───────── VLM NEURAL-DECODE GLOW (speech bubble) ───────── */
+  .speech.ai.decoding{ animation:none; opacity:1;
+    box-shadow:0 14px 30px #2a3b4a33, 0 0 0 2px #00d4ff, 0 0 26px #00d4ffaa;
+    animation:vlmGlow 1s ease-in-out infinite; }
+  @keyframes vlmGlow{ 0%,100%{box-shadow:0 14px 30px #2a3b4a33,0 0 0 2px #00d4ff,0 0 18px #00d4ff66}
+    50%{box-shadow:0 14px 30px #2a3b4a33,0 0 0 2px #2ec4a6,0 0 34px #00d4ffcc} }
+  .vlm-cursor{ display:inline-block; color:#04222b; animation:vlmBlink .5s steps(1) infinite; }
+  @keyframes vlmBlink{ 0%,100%{opacity:1} 50%{opacity:.15} }
 
   /* ───────── SPEECH / VOICE ───────── */
   .speech{
@@ -308,8 +353,12 @@
   <div class="sidewalk"></div>
   <div class="road-line" id="roadLine"></div>
 
-  <!-- zone flash + hazards -->
-  <div class="zone-flash" id="zoneFlash"></div>
+  <!-- floor-mapped collision corridor + hazards -->
+  <div class="floor-corridor" id="corridor">
+    <div class="fz far"><span class="fz-label">FAR</span></div>
+    <div class="fz mid"><span class="fz-label">MID</span></div>
+    <div class="fz near"><span class="fz-label">NEAR</span></div>
+  </div>
   <div id="hazardLayer"></div>
 
   <!-- CHARACTER -->
@@ -429,7 +478,10 @@ const stage = document.getElementById('stage');
 const charEl = document.getElementById('char');
 const hazardLayer = document.getElementById('hazardLayer');
 const capEl = document.getElementById('caption');
-const zoneFlash = document.getElementById('zoneFlash');
+const corridor = document.getElementById('corridor');
+const fzFar = corridor.querySelector('.fz.far'), fzMid = corridor.querySelector('.fz.mid'), fzNear = corridor.querySelector('.fz.near');
+const FZ = { far:fzFar, mid:fzMid, near:fzNear };
+const PAN_BY_TYPE = { pole:0.7, pothole:-0.3, cyclist:-0.8, vehicle:-0.6, crosswalk:0, person:0.5 };
 const speechUser = document.getElementById('speechUser');
 const speechAI = document.getElementById('speechAI');
 const progress = document.getElementById('progress');
@@ -461,8 +513,11 @@ const MOMENTS = [
   { t:50,   fn:()=>{ orbWake(); speechUser.textContent='Hey AXON — is it safe to cross?'; speechUser.classList.add('show'); } },
   { t:52.4, fn:()=> orbThink() },
   { t:53.6, fn:()=>{ orbSpeak();
-      speechAI.innerHTML='The crosswalk is clear — you’re safe to cross <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>';
-      speechAI.classList.add('show');
+      speechAI.classList.add('show','decoding');
+      typeDecode(speechAI, 'The crosswalk is clear — you’re safe to cross', ()=>{
+        speechAI.classList.remove('decoding');
+        speechAI.innerHTML = 'The crosswalk is clear — you’re safe to cross <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>';
+      });
       say("The vehicle has passed. The crosswalk ahead is clear. You are safe to cross now."); } },
   { t:59,   fn:()=> orbSleep() },
   { t:68,   fn:()=> say("Seeing the world. For those who cannot.", {rate:.94}) },
@@ -471,16 +526,40 @@ const MOMENTS = [
 let running=false, startT=0, lastT=DUR, timers=[];
 const spawned=new Set(), capShown=new Set(), speechShown=new Set(), momentsShown=new Set();
 
-function clearTimers(){ timers.forEach(id=>clearTimeout(id)); timers=[]; }
+let ivls=[];
+function clearTimers(){ timers.forEach(id=>clearTimeout(id)); timers=[]; ivls.forEach(id=>clearInterval(id)); ivls=[]; }
 function resetCycle(){
   clearTimers(); hazardLayer.innerHTML='';
   spawned.clear(); capShown.clear(); speechShown.clear(); momentsShown.clear();
-  capEl.className='caption'; zoneFlash.className='zone-flash';
-  speechUser.classList.remove('show'); speechAI.classList.remove('show');
+  capEl.className='caption';
+  [fzFar,fzMid,fzNear].forEach(z=>z.classList.remove('lit'));
+  speechUser.classList.remove('show'); speechAI.classList.remove('show','decoding');
   charEl.classList.remove('stopped','alert');
   scrollEls.forEach(e=>e.classList.remove('paused'));
   orbSleep(); duck(false);
   if('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+const GLYPHS='ABCDEFGHJKLMNPQRSTUVWXYZ0123456789·#@%&!?';
+function scrambleText(el, finalText, ms){
+  const chars=[...finalText]; const start=performance.now();
+  const iv=setInterval(()=>{
+    const p=Math.min((performance.now()-start)/ms, 1);
+    const locked=Math.floor(p*chars.length);
+    let out='';
+    for(let i=0;i<chars.length;i++){
+      if(i<locked || chars[i]===' '||chars[i]==='·') out+=chars[i];
+      else out+=GLYPHS[(Math.random()*GLYPHS.length)|0];
+    }
+    el.textContent=out;
+    if(p>=1){ el.textContent=finalText; clearInterval(iv); }
+  }, 34);
+  ivls.push(iv);
+}
+function litZone(zone, hold){
+  const z=FZ[zone]; if(!z) return;
+  z.classList.add('lit');
+  timers.push(setTimeout(()=>z.classList.remove('lit'), hold||1200));
 }
 
 function spawnHazard(ev){
@@ -488,29 +567,35 @@ function spawnHazard(ev){
   h.className='hazard move'; h.style.setProperty('--life', ev.life+'s');
   h.style.bottom = ev.low ? '17%' : '18%';
   h.innerHTML = HAZ[ev.type] +
-    `<div class="det-box ${ev.cls}"></div><div class="det-tag ${ev.cls}">${ev.tag}</div><div class="ping"></div>`;
+    `<div class="det-box ${ev.cls}"></div><div class="det-tag ${ev.cls}"></div><div class="ping"></div>`;
   hazardLayer.appendChild(h);
-  // detection lands ~38% into its travel (when it's in front of the walker)
-  const detectAt = ev.life*1000*0.40;
+  const tagEl = h.querySelector('.det-tag');
+  const L = ev.life*1000;
+
+  // floor corridor illuminates FAR → MID → NEAR as the object approaches
+  timers.push(setTimeout(()=>litZone('far',  1100), L*0.22));
+  timers.push(setTimeout(()=>litZone('mid',  1100), L*0.42));
+  timers.push(setTimeout(()=>litZone('near', ev.urgent?9000:1300), L*0.58));
+
+  // detection lands ~40% into travel (in front of the walker)
+  const detectAt = L*0.40;
   timers.push(setTimeout(()=>{
     h.classList.add('detected');
     charEl.classList.add('alert');
-    chime(ev.urgent?'alert':'detect');
+    scrambleText(tagEl, ev.tag, 620);          // matrix lock-on
+    chime(ev.urgent?'alert':'detect', PAN_BY_TYPE[ev.type] ?? 0);  // spatial chime
     timers.push(setTimeout(()=>charEl.classList.remove('alert'), 1600));
     if(ev.urgent){
-      zoneFlash.classList.add('on');
       charEl.classList.add('stopped');
       scrollEls.forEach(e=>e.classList.add('paused'));
-      // resume walking after the voice beat
       timers.push(setTimeout(()=>{
         charEl.classList.remove('stopped');
         scrollEls.forEach(e=>e.classList.remove('paused'));
       }, 13500));
-      timers.push(setTimeout(()=>zoneFlash.classList.remove('on'), 2200));
     }
   }, detectAt));
   // auto-remove
-  timers.push(setTimeout(()=>h.remove(), ev.life*1000+200));
+  timers.push(setTimeout(()=>h.remove(), L+200));
 }
 
 function showCaption(c){
@@ -582,13 +667,20 @@ function buildSynth(){
     master.gain.linearRampToValueAtTime(0.6,actx.currentTime+2.5);
   }catch(e){ actx=null; }
 }
-function chime(kind){
+function chime(kind, pan){
   if(useFile||!actx||muted) return;
   const t=actx.currentTime;
   const notes = kind==='alert' ? [440.00,440.00] : [523.25,659.25]; // alert=two same; detect=rising third
   notes.forEach((f,i)=>{
     const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f;
-    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(window.__bus||master);
+    const g=actx.createGain(); g.gain.value=0;
+    // binaural spatialisation — threat heard from its real direction
+    let dest=window.__bus||master;
+    if(typeof actx.createStereoPanner==='function'){
+      const p=actx.createStereoPanner(); p.pan.value=Math.max(-1,Math.min(1, pan||0));
+      g.connect(p); p.connect(dest);
+    } else { g.connect(dest); }
+    o.connect(g);
     const st=t+i*0.14; g.gain.linearRampToValueAtTime(kind==='alert'?0.16:0.12,st+0.02);
     g.gain.exponentialRampToValueAtTime(0.0008,st+0.6); o.start(st); o.stop(st+0.7);
   });
@@ -622,6 +714,20 @@ function orbWake(){ orb.classList.add('show','listening'); orb.classList.remove(
 function orbThink(){ orb.classList.remove('listening','speaking'); orb.classList.add('show','thinking'); orbLabel.textContent='Thinking…'; }
 function orbSpeak(){ orb.classList.remove('listening','thinking'); orb.classList.add('show','speaking'); orbLabel.innerHTML='AX<span class="dot">O</span>N'; }
 function orbSleep(){ if(orb) orb.classList.remove('show','listening','thinking','speaking'); }
+// VLM token-stream typewriter with flickering block cursor
+function typeDecode(el, text, onDone){
+  const chars=[...text]; let i=0;
+  el.textContent='';
+  function step(){
+    i++;
+    el.textContent = chars.slice(0,i).join('') ;
+    const cur=document.createElement('span'); cur.className='vlm-cursor'; cur.textContent='█';
+    el.appendChild(cur);
+    if(i<chars.length){ timers.push(setTimeout(step, 30)); }
+    else { timers.push(setTimeout(()=>{ if(onDone) onDone(); }, 380)); }
+  }
+  step();
+}
 function wakeChime(){
   if(useFile||!actx||muted) return;
   const t=actx.currentTime;
