@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXON — A Walk to Independence</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Sora:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2b3a; --scan:#00d4ff; --scan-deep:#0096c7;
+    --amber:#ff9e2c; --red:#ff4d6d; --good:#2ec4a6; --gold:#ffd23f;
+    --cap-bg:#11202eee; --cap-text:#f4faff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;background:#000;font-family:'Outfit',sans-serif;}
+
+  #stage{ position:fixed; inset:0; overflow:hidden; }
+
+  /* ───────── SKY & SUN ───────── */
+  .sky{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg,#8fd3f4 0%,#bfe3f6 32%,#ffe8c7 64%,#ffd6a8 100%);
+    animation:skyShift 72s linear infinite;
+  }
+  @keyframes skyShift{
+    0%   { filter:brightness(.86) saturate(.9) hue-rotate(-6deg); }
+    14%  { filter:brightness(1)   saturate(1)  hue-rotate(0deg); }
+    72%  { filter:brightness(1.05) saturate(1.05) hue-rotate(4deg); }
+    90%  { filter:brightness(1)   saturate(1) hue-rotate(8deg); }
+    100% { filter:brightness(.86) saturate(.9) hue-rotate(-6deg); }
+  }
+  .sun{
+    position:absolute; left:50%; width:170px; height:170px; border-radius:50%;
+    background:radial-gradient(circle,#fff6cf 0%,#ffd23f 45%,#ffb33f00 72%);
+    transform:translateX(-50%); animation:sunRise 72s ease-in-out infinite;
+  }
+  @keyframes sunRise{
+    0%   { top:62%; opacity:.7; }
+    18%  { top:20%; opacity:1; }
+    78%  { top:16%; opacity:1; }
+    100% { top:62%; opacity:.7; }
+  }
+  .cloud{ position:absolute; opacity:.85; filter:drop-shadow(0 8px 12px #9bbcd322); }
+  .cloud svg{ display:block; }
+  .c1{ top:14%; animation:drift 48s linear infinite; }
+  .c2{ top:24%; transform:scale(.7); animation:drift 64s linear infinite; animation-delay:-20s; }
+  .c3{ top:9%;  transform:scale(1.1); animation:drift 80s linear infinite; animation-delay:-40s; }
+  @keyframes drift{ from{left:110%;} to{left:-30%;} }
+
+  /* ───────── PARALLAX CITY ───────── */
+  .layer{ position:absolute; left:0; bottom:0; width:200%; height:100%; display:flex; }
+  .layer > *{ width:50%; height:100%; flex:0 0 50%; }
+  .city-far{ bottom:22%; height:46%; animation:scroll 60s linear infinite; opacity:.55; }
+  .city-near{ bottom:18%; height:54%; animation:scroll 34s linear infinite; opacity:.85; }
+  .ground{ bottom:0; height:24%; animation:none; }
+  .road-line{ position:absolute; bottom:9%; left:0; width:200%; height:5px; display:flex; gap:60px;
+    animation:scroll 6s linear infinite; }
+  .road-line i{ flex:0 0 70px; height:5px; background:#ffffffcc; border-radius:3px; }
+  .fg{ bottom:0; height:30%; animation:scroll 5s linear infinite; }
+  @keyframes scroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+  .paused{ animation-play-state:paused !important; }
+
+  .ground-fill{
+    position:absolute; left:0; bottom:0; width:100%; height:24%;
+    background:linear-gradient(180deg,#7c8a97 0%,#5d6b78 100%);
+  }
+  .sidewalk{
+    position:absolute; left:0; bottom:21%; width:100%; height:4%;
+    background:linear-gradient(180deg,#e7c98f,#d9b878);
+    box-shadow:0 -2px 0 #f3ddae inset;
+  }
+
+  /* ───────── CHARACTER ───────── */
+  .character{
+    position:absolute; left:26%; bottom:18%; width:clamp(160px,17vw,250px);
+    transform-origin:bottom center; z-index:8;
+    animation:bob .9s ease-in-out infinite; filter:drop-shadow(0 14px 10px #2a3b4a33);
+  }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+  .character svg{ display:block; width:100%; overflow:visible; }
+  .limb{ transform-box:fill-box; }
+  .leg-b{ transform-origin:50% 4%; animation:legB .9s ease-in-out infinite; }
+  .leg-f{ transform-origin:50% 4%; animation:legF .9s ease-in-out infinite; }
+  .arm-b{ transform-origin:50% 6%; animation:legF .9s ease-in-out infinite; }
+  @keyframes legB{ 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-22deg)} }
+  @keyframes legF{ 0%,100%{transform:rotate(-22deg)} 50%{transform:rotate(20deg)} }
+  .cane-arm{ transform-origin:60% 8%; animation:caneSwing .9s ease-in-out infinite; }
+  @keyframes caneSwing{ 0%,100%{transform:rotate(-7deg)} 50%{transform:rotate(7deg)} }
+
+  /* scan cone from glasses */
+  .scan-cone{
+    position:absolute; left:62%; top:22%; width:60%; height:46%;
+    background:conic-gradient(from 78deg at 0% 50%, #00d4ff00, #00d4ff44 14deg, #00d4ff00 30deg);
+    clip-path:polygon(0 42%,100% 0,100% 100%,0 58%);
+    transform-origin:left center; animation:cone 2.4s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes cone{ 0%,100%{opacity:.45; transform:scaleX(.96)} 50%{opacity:.9; transform:scaleX(1.04)} }
+  .character.alert .scan-cone{ animation:coneAlert .5s ease-in-out 3; }
+  @keyframes coneAlert{ 0%,100%{opacity:.6} 50%{opacity:1; filter:drop-shadow(0 0 8px #00d4ff)} }
+
+  /* character pauses (stops walking) */
+  .character.stopped{ animation-play-state:paused; }
+  .character.stopped .leg-b,.character.stopped .leg-f,
+  .character.stopped .arm-b,.character.stopped .cane-arm{ animation-play-state:paused; }
+
+  /* ───────── HAZARDS ───────── */
+  #hazardLayer{ position:absolute; inset:0; z-index:7; pointer-events:none; }
+  .hazard{ position:absolute; bottom:18%; transform:translateX(-50%); will-change:left; }
+  .hazard .obj{ display:block; filter:drop-shadow(0 10px 8px #2a3b4a33); }
+  .hazard.move{ animation:hazardMove var(--life,8s) linear forwards; }
+  @keyframes hazardMove{ from{left:108%;} to{left:-22%;} }
+
+  .det-box{
+    position:absolute; inset:-8% -6% -6% -6%; border:3px solid var(--scan); border-radius:6px;
+    opacity:0; box-shadow:0 0 0 2px #0b2b3933, 0 0 22px #00d4ff66;
+  }
+  .det-box.amber{ border-color:var(--amber); box-shadow:0 0 18px #ff9e2c66; }
+  .det-box.red{ border-color:var(--red); box-shadow:0 0 24px #ff4d6d88; }
+  .det-box.good{ border-color:var(--good); box-shadow:0 0 18px #2ec4a666; }
+  .hazard.detected .det-box{ animation:boxPop .5s both; }
+  @keyframes boxPop{ 0%{opacity:0;transform:scale(1.25)} 60%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+  .det-tag{
+    position:absolute; top:-30px; left:-3px; font-family:'JetBrains Mono',monospace;
+    font-size:13px; font-weight:700; padding:2px 9px; border-radius:5px; white-space:nowrap;
+    color:#06222e; opacity:0;
+  }
+  .det-tag.amber{ background:var(--amber); } .det-tag.red{ background:var(--red); color:#fff; }
+  .det-tag.good{ background:var(--good); } .det-tag.scan{ background:var(--scan); }
+  .hazard.detected .det-tag{ animation:fadeIn .4s .12s both; }
+  @keyframes fadeIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  /* distance ring ping on detect */
+  .ping{ position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%;
+    border:2px solid var(--scan); transform:translate(-50%,-50%); opacity:0; }
+  .hazard.detected .ping{ animation:ping .9s ease-out .1s 2; }
+  @keyframes ping{ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.4)} }
+
+  /* ───────── CORRIDOR ZONE FLASH ───────── */
+  .zone-flash{
+    position:absolute; left:18%; bottom:0; width:64%; height:46%; z-index:6; opacity:0;
+    background:linear-gradient(0deg,#ff4d6d44,#ff4d6d00);
+    clip-path:polygon(35% 0,65% 0,100% 100%,0 100%);
+  }
+  .zone-flash.on{ animation:zoneFlash 2.2s ease both; }
+  @keyframes zoneFlash{ 0%{opacity:0} 20%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+
+  /* ───────── SPEECH / VOICE ───────── */
+  .speech{
+    position:absolute; left:34%; bottom:46%; z-index:12; opacity:0;
+    background:#fff; color:#16323f; padding:14px 22px; border-radius:18px 18px 18px 4px;
+    font-size:clamp(15px,1.7vw,22px); font-weight:600; box-shadow:0 14px 30px #2a3b4a33;
+    max-width:34ch;
+  }
+  .speech::after{ content:''; position:absolute; left:14px; bottom:-12px; border:7px solid transparent;
+    border-top-color:#fff; border-bottom:0; }
+  .speech.ai{ left:auto; right:10%; border-radius:18px 18px 4px 18px;
+    background:linear-gradient(120deg,#00d4ff,#2ec4a6); color:#04222b; }
+  .speech.ai::after{ left:auto; right:18px; border-top-color:#2ec4a6; }
+  .speech.show{ animation:speechIn 3.6s ease both; }
+  @keyframes speechIn{ 0%{opacity:0;transform:translateY(14px) scale(.92)} 8%{opacity:1;transform:translateY(0) scale(1)} 88%{opacity:1} 100%{opacity:0;transform:translateY(-8px)} }
+  .wave{ display:inline-flex; gap:3px; margin-left:8px; vertical-align:middle; }
+  .wave i{ width:3px; height:14px; background:currentColor; border-radius:2px; animation:wave .9s ease-in-out infinite; }
+  .wave i:nth-child(2){animation-delay:.12s} .wave i:nth-child(3){animation-delay:.24s}
+  .wave i:nth-child(4){animation-delay:.36s} .wave i:nth-child(5){animation-delay:.48s}
+  @keyframes wave{ 0%,100%{height:6px} 50%{height:18px} }
+
+  /* ───────── CAPTIONS ───────── */
+  .caption{
+    position:absolute; left:50%; bottom:9%; transform:translateX(-50%); z-index:15;
+    background:var(--cap-bg); color:var(--cap-text); padding:12px 26px; border-radius:12px;
+    font-size:clamp(15px,2vw,26px); font-weight:500; letter-spacing:.3px; text-align:center;
+    max-width:80vw; opacity:0; backdrop-filter:blur(6px); box-shadow:0 12px 30px #0b1c2855;
+  }
+  .caption.show{ animation:capIn .5s both; }
+  .caption.hide{ animation:capOut .4s both; }
+  @keyframes capIn{ from{opacity:0;transform:translate(-50%,14px)} to{opacity:1;transform:translate(-50%,0)} }
+  @keyframes capOut{ from{opacity:1} to{opacity:0;transform:translate(-50%,-8px)} }
+  .caption .warn{ color:var(--amber); font-weight:700; }
+  .caption .stop{ color:var(--red); font-weight:800; }
+  .caption .ok{ color:var(--good); font-weight:700; }
+
+  /* ───────── TITLE / OUTRO ───────── */
+  .title-card, .outro-card{
+    position:absolute; inset:0; z-index:20; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; pointer-events:none;
+  }
+  .title-card{ animation:titleFade 72s linear infinite; }
+  .outro-card{ animation:outroFade 72s linear infinite; opacity:0; }
+  @keyframes titleFade{ 0%{opacity:0} 2%{opacity:1} 9%{opacity:1} 13%{opacity:0} 100%{opacity:0} }
+  @keyframes outroFade{ 0%,86%{opacity:0} 90%{opacity:1} 99%{opacity:1} 100%{opacity:0} }
+  .brand{
+    font-family:'Sora',sans-serif; font-weight:900; font-size:clamp(64px,13vw,180px);
+    letter-spacing:.04em; color:#10303f;
+    text-shadow:0 6px 30px #ffffff88;
+  }
+  .brand .dot{ color:var(--scan); }
+  .title-sub{ font-family:'JetBrains Mono',monospace; letter-spacing:.42em; text-transform:uppercase;
+    font-size:clamp(11px,1.5vw,17px); color:#1d4858; margin-top:18px; }
+  .tagline{ font-family:'Sora',sans-serif; font-weight:700; font-size:clamp(24px,4vw,60px);
+    color:#10303f; line-height:1.12; margin-top:10px; }
+  .tagline span{ background:linear-gradient(120deg,#0096c7,#2ec4a6); -webkit-background-clip:text;
+    background-clip:text; -webkit-text-fill-color:transparent; }
+  .credit{ font-family:'JetBrains Mono',monospace; font-size:clamp(11px,1.4vw,16px); color:#22566a;
+    letter-spacing:3px; text-transform:uppercase; margin-top:30px; }
+
+  /* warm glow on resolution */
+  .glow-grade{ position:absolute; inset:0; z-index:18; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at 60% 40%,#ffe9b055,transparent 60%);
+    animation:glowGrade 72s linear infinite; }
+  @keyframes glowGrade{ 0%,72%{opacity:0} 82%{opacity:1} 96%{opacity:.6} 100%{opacity:0} }
+
+  /* ───────── HEY AXON WAKE ORB ───────── */
+  .wake-orb{ position:absolute; left:50%; top:29%; transform:translate(-50%,-50%); z-index:16;
+    opacity:0; transition:opacity .5s ease; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .wake-orb.show{ opacity:1; }
+  .orb-stage{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; }
+  .orb-core{ position:relative; width:96px; height:96px; border-radius:50%;
+    background:conic-gradient(from 0deg,#00d4ff,#2ec4a6,#7b61ff,#00d4ff);
+    box-shadow:0 0 50px #00d4ff88, inset 0 0 30px #ffffff66; animation:orbSpin 6s linear infinite; }
+  .orb-core::after{ content:''; position:absolute; inset:26px; border-radius:50%;
+    background:radial-gradient(circle,#ffffff,#bff4ff 55%,#00d4ff00); }
+  @keyframes orbSpin{ to{ transform:rotate(360deg); } }
+  .orb-ring{ position:absolute; width:96px; height:96px; border:2px solid #00d4ff66; border-radius:50%; opacity:0; }
+  .wake-orb.listening .orb-ring{ animation:orbRing 1.8s ease-out infinite; }
+  .wake-orb.listening .orb-ring:nth-child(2){ animation-delay:.6s; }
+  .wake-orb.listening .orb-ring:nth-child(3){ animation-delay:1.2s; }
+  @keyframes orbRing{ 0%{opacity:.7; transform:scale(.7)} 100%{opacity:0; transform:scale(2.2)} }
+  .orb-wave{ position:absolute; display:flex; gap:4px; align-items:center; height:46px; opacity:0; }
+  .wake-orb.speaking .orb-wave{ opacity:1; }
+  .wake-orb.speaking .orb-core{ animation:orbSpin 6s linear infinite, orbPulse .5s ease-in-out infinite; }
+  @keyframes orbPulse{ 0%,100%{ box-shadow:0 0 50px #00d4ff88, inset 0 0 30px #ffffff66; } 50%{ box-shadow:0 0 85px #00d4ffcc, inset 0 0 40px #ffffff; } }
+  .orb-wave i{ width:5px; height:10px; background:#ffffff; border-radius:3px; box-shadow:0 0 8px #00d4ff; animation:owv .6s ease-in-out infinite; }
+  .orb-wave i:nth-child(2){animation-delay:.08s} .orb-wave i:nth-child(3){animation-delay:.16s}
+  .orb-wave i:nth-child(4){animation-delay:.24s} .orb-wave i:nth-child(5){animation-delay:.32s}
+  .orb-wave i:nth-child(6){animation-delay:.4s} .orb-wave i:nth-child(7){animation-delay:.48s}
+  @keyframes owv{ 0%,100%{height:8px} 50%{height:40px} }
+  .orb-label{ font-family:'JetBrains Mono',monospace; font-weight:700; letter-spacing:3px;
+    text-transform:uppercase; font-size:clamp(13px,1.6vw,20px); color:#0e3140;
+    background:#ffffffd9; padding:7px 18px; border-radius:22px; box-shadow:0 10px 24px #2a3b4a2a; }
+  .orb-label .dot{ color:#00b4d8; }
+
+  /* ───────── UI ───────── */
+  #progress{ position:fixed; bottom:0; left:0; height:4px; width:0; z-index:60;
+    background:linear-gradient(90deg,#00d4ff,#2ec4a6,#ffd23f); }
+  .ctl{ position:fixed; top:18px; z-index:70; font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:#0e3140; background:#ffffffcc; border:1px solid #ffffff; border-radius:9px; padding:8px 13px;
+    cursor:pointer; backdrop-filter:blur(8px); transition:all .2s; user-select:none; opacity:.5;
+    box-shadow:0 6px 16px #2a3b4a22; }
+  .ctl:hover{ opacity:1; color:var(--scan-deep); }
+  #muteBtn{ right:18px; } #exitBtn{ right:104px; }
+  .esc-hint{ position:fixed; bottom:14px; right:18px; z-index:60; font-family:'JetBrains Mono',monospace;
+    font-size:10px; letter-spacing:2px; color:#10303f99; }
+
+  /* ───────── ENTRY ───────── */
+  #entry{ position:fixed; inset:0; z-index:200; cursor:pointer;
+    background:linear-gradient(180deg,#8fd3f4,#bfe3f6 40%,#ffe8c7);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px;
+    transition:opacity .8s ease; }
+  #entry.gone{ opacity:0; pointer-events:none; }
+  #entry .e-brand{ font-family:'Sora',sans-serif; font-weight:900; font-size:clamp(64px,13vw,170px);
+    color:#10303f; letter-spacing:.04em; animation:bob 3s ease-in-out infinite; }
+  #entry .e-brand .dot{ color:var(--scan); }
+  #entry .e-sub{ font-family:'JetBrains Mono',monospace; letter-spacing:.4em; text-transform:uppercase;
+    font-size:clamp(11px,1.4vw,15px); color:#1d4858; margin-top:-14px; }
+  #entry .e-btn{ display:flex; align-items:center; gap:14px; padding:16px 36px; border-radius:100px;
+    border:none; background:#10303f; color:#fff; font-weight:600; font-size:clamp(15px,1.7vw,19px);
+    letter-spacing:.5px; box-shadow:0 14px 34px #10303f44; animation:btnPulse 2.2s ease-in-out infinite; }
+  @keyframes btnPulse{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+  #entry .e-play{ width:30px;height:30px;border-radius:50%;background:var(--scan);display:flex;align-items:center;justify-content:center; }
+  #entry .e-play svg{ fill:#06222e; width:13px;height:13px;margin-left:2px; }
+  #entry .e-note{ font-size:12px; color:#1d4858aa; letter-spacing:1px; }
+
+  @media (max-width:680px){
+    .character{ left:20%; width:140px; }
+    .speech{ font-size:15px; left:6%; }
+    .speech.ai{ right:6%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ENTRY -->
+<div id="entry">
+  <div class="e-brand">AX<span class="dot">O</span>N</div>
+  <div class="e-sub">A Walk to Independence</div>
+  <button class="e-btn">
+    <span class="e-play"><svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg></span>
+    Begin the story
+  </button>
+  <div class="e-note">▸ fullscreen + sound · press Esc to exit</div>
+</div>
+
+<div id="stage">
+  <div class="sky"></div>
+  <div class="sun"></div>
+
+  <div class="cloud c1"><svg width="200" height="70"><ellipse cx="60" cy="45" rx="55" ry="22" fill="#ffffff"/><ellipse cx="110" cy="34" rx="44" ry="26" fill="#ffffff"/><ellipse cx="150" cy="46" rx="40" ry="20" fill="#ffffff"/></svg></div>
+  <div class="cloud c2"><svg width="200" height="70"><ellipse cx="60" cy="45" rx="55" ry="22" fill="#ffffff"/><ellipse cx="110" cy="34" rx="44" ry="26" fill="#ffffff"/><ellipse cx="150" cy="46" rx="40" ry="20" fill="#ffffff"/></svg></div>
+  <div class="cloud c3"><svg width="200" height="70"><ellipse cx="60" cy="45" rx="55" ry="22" fill="#ffffff"/><ellipse cx="110" cy="34" rx="44" ry="26" fill="#ffffff"/><ellipse cx="150" cy="46" rx="40" ry="20" fill="#ffffff"/></svg></div>
+
+  <!-- far city -->
+  <div class="layer city-far" id="cityFar"></div>
+  <!-- near city -->
+  <div class="layer city-near" id="cityNear"></div>
+
+  <!-- ground -->
+  <div class="ground-fill"></div>
+  <div class="sidewalk"></div>
+  <div class="road-line" id="roadLine"></div>
+
+  <!-- zone flash + hazards -->
+  <div class="zone-flash" id="zoneFlash"></div>
+  <div id="hazardLayer"></div>
+
+  <!-- CHARACTER -->
+  <div class="character" id="char">
+    <div class="scan-cone"></div>
+    <svg viewBox="0 0 200 300">
+      <!-- shadow -->
+      <ellipse cx="96" cy="292" rx="64" ry="10" fill="#2a3b4a22"/>
+      <!-- back leg -->
+      <g class="limb leg-b"><rect x="84" y="196" width="20" height="80" rx="10" fill="#22384a"/><rect x="80" y="268" width="30" height="16" rx="7" fill="#16252f"/></g>
+      <!-- back arm -->
+      <g class="limb arm-b"><rect x="92" y="120" width="17" height="66" rx="8.5" fill="#1f8f86"/><circle cx="100" cy="190" r="9" fill="#f2b48a"/></g>
+      <!-- torso / jacket -->
+      <path d="M70 120 q26 -16 56 0 l6 78 q-34 14 -68 0 z" fill="#2ec4a6"/>
+      <path d="M70 120 q26 -16 56 0 l3 30 q-30 12 -62 0 z" fill="#27b094"/>
+      <!-- front leg -->
+      <g class="limb leg-f"><rect x="92" y="196" width="21" height="84" rx="10.5" fill="#2c485c"/><rect x="88" y="272" width="32" height="16" rx="7" fill="#1b2c38"/></g>
+      <!-- head -->
+      <circle cx="104" cy="86" r="30" fill="#f4b483"/>
+      <path d="M76 84 q4 -34 34 -32 q24 2 24 22 q-10 -8 -26 -6 q-22 3 -32 16 z" fill="#3a2c23"/>
+      <!-- ear -->
+      <circle cx="80" cy="92" r="6" fill="#eaa873"/>
+      <!-- AXON glasses -->
+      <g>
+        <rect x="92" y="78" width="42" height="16" rx="7" fill="#12303f"/>
+        <rect x="96" y="81" width="34" height="10" rx="5" fill="url(#lens)"/>
+        <rect x="74" y="83" width="20" height="5" rx="2.5" fill="#12303f"/>
+        <circle cx="131" cy="86" r="2.4" fill="#00e5ff"><animate attributeName="opacity" values="1;.3;1" dur="1.6s" repeatCount="indefinite"/></circle>
+      </g>
+      <!-- front arm + cane -->
+      <g class="limb cane-arm">
+        <rect x="104" y="122" width="17" height="60" rx="8.5" fill="#27b094"/>
+        <circle cx="113" cy="186" r="9" fill="#f4b483"/>
+        <rect x="111" y="184" width="7" height="118" rx="3.5" fill="#eef3f6" transform="rotate(20 113 186)"/>
+        <circle cx="156" cy="294" r="7" fill="#ff4d6d"/>
+      </g>
+      <defs>
+        <linearGradient id="lens" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#063b4a"/><stop offset="1" stop-color="#00b4d8"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- speech bubbles -->
+  <div class="speech" id="speechUser">Is it safe to cross?</div>
+  <div class="speech ai" id="speechAI">Crosswalk clear — safe to cross now <span class="wave"><i></i><i></i><i></i><i></i><i></i></span></div>
+
+  <!-- Hey AXON wake orb -->
+  <div class="wake-orb" id="orb">
+    <div class="orb-stage">
+      <div class="orb-ring"></div><div class="orb-ring"></div><div class="orb-ring"></div>
+      <div class="orb-core"></div>
+      <div class="orb-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="orb-label" id="orbLabel">Hey <span class="dot">AXON</span></div>
+  </div>
+
+  <!-- caption -->
+  <div class="caption" id="caption"></div>
+
+  <!-- grades + cards -->
+  <div class="glow-grade"></div>
+  <div class="title-card">
+    <div class="brand">AX<span class="dot">O</span>N</div>
+    <div class="title-sub">Wearable Spatial Intelligence</div>
+  </div>
+  <div class="outro-card">
+    <div class="brand" style="font-size:clamp(48px,10vw,140px)">AX<span class="dot">O</span>N</div>
+    <div class="tagline">Seeing the World,<br><span>For Those Who Cannot.</span></div>
+    <div class="credit">Team AXON · UTS AI Showcase 2026</div>
+  </div>
+</div>
+
+<div id="progress"></div>
+<div class="ctl" id="exitBtn">⤢ exit</div>
+<div class="ctl" id="muteBtn">♪ sound on</div>
+<div class="esc-hint">ESC TO EXIT</div>
+
+<script>
+// ════════════════ BUILD PARALLAX CITY ════════════════
+function buildingRow(palette, heights){
+  let r='';
+  let x=0;
+  for(let i=0;i<heights.length;i++){
+    const h=heights[i], w=44+ (i%3)*14;
+    const c=palette[i%palette.length];
+    r+=`<rect x="${x}" y="${100-h}" width="${w-6}" height="${h}" rx="3" fill="${c}"/>`;
+    // windows
+    for(let wy=100-h+8; wy<96; wy+=14){ for(let wx=x+6; wx<x+w-12; wx+=14){ r+=`<rect x="${wx}" y="${wy}" width="6" height="7" rx="1" fill="#ffffff55"/>`; } }
+    x+=w;
+  }
+  return `<svg viewBox="0 0 ${x} 100" preserveAspectRatio="none" style="width:100%;height:100%"><g>${r}</g></svg>`;
+}
+const farPal=['#b9a7e0','#a994d8','#c7b6e8'];
+const nearPal=['#8aa0c8','#7488b8','#9bb0d4','#6f9bc4'];
+const farHeights=[52,64,46,72,58,68,50,78,60,66,54,74,62,70,48,80];
+const nearHeights=[70,86,62,94,78,90,68,98,80,88,72,96,84,92,66,100];
+document.getElementById('cityFar').innerHTML  = `<div>${buildingRow(farPal,farHeights)}</div><div>${buildingRow(farPal,farHeights)}</div>`;
+document.getElementById('cityNear').innerHTML = `<div>${buildingRow(nearPal,nearHeights)}</div><div>${buildingRow(nearPal,nearHeights)}</div>`;
+// road dashes
+const rl=document.getElementById('roadLine'); let dashes=''; for(let i=0;i<26;i++) dashes+='<i></i>'; rl.innerHTML=dashes;
+
+// ════════════════ HAZARD SVGS ════════════════
+const HAZ = {
+  pole:  `<svg class="obj" width="46" height="150" viewBox="0 0 46 150"><rect x="19" y="6" width="8" height="140" rx="4" fill="#5b6b78"/><rect x="6" y="2" width="34" height="12" rx="6" fill="#3f4d59"/><rect x="14" y="0" width="18" height="8" rx="4" fill="#ffd23f"/></svg>`,
+  pothole:`<svg class="obj" width="120" height="40" viewBox="0 0 120 40"><ellipse cx="60" cy="26" rx="54" ry="13" fill="#2b2b30"/><ellipse cx="60" cy="22" rx="44" ry="9" fill="#1a1a1f"/></svg>`,
+  cyclist:`<svg class="obj" width="150" height="120" viewBox="0 0 150 120"><circle cx="38" cy="96" r="20" fill="none" stroke="#2b3b48" stroke-width="4"/><circle cx="112" cy="96" r="20" fill="none" stroke="#2b3b48" stroke-width="4"/><path d="M38 96 L74 96 L96 64 L112 96 M74 96 L86 64 L96 64" stroke="#e8534e" stroke-width="4" fill="none"/><circle cx="92" cy="40" r="11" fill="#f4b483"/><path d="M84 52 L74 78 M100 50 L112 72" stroke="#3a7ca5" stroke-width="6" stroke-linecap="round"/><path d="M86 50 q6 -8 16 -2" stroke="#3a7ca5" stroke-width="6" fill="none" stroke-linecap="round"/></svg>`,
+  vehicle:`<svg class="obj" width="220" height="120" viewBox="0 0 220 120"><rect x="10" y="54" width="200" height="44" rx="14" fill="#ef476f"/><path d="M48 56 q14 -30 50 -30 l44 0 q26 0 40 30 z" fill="#f56a8a"/><rect x="60" y="34" width="74" height="22" rx="6" fill="#bfe7f5"/><circle cx="62" cy="100" r="16" fill="#222"/><circle cx="160" cy="100" r="16" fill="#222"/><circle cx="62" cy="100" r="6" fill="#888"/><circle cx="160" cy="100" r="6" fill="#888"/><rect x="200" y="64" width="12" height="10" rx="3" fill="#ffe08a"/></svg>`,
+  crosswalk:`<svg class="obj" width="200" height="50" viewBox="0 0 200 50"><g fill="#f4faff">${[0,28,56,84,112,140,168].map(x=>`<rect x="${x}" y="6" width="18" height="38" rx="3"/>`).join('')}</g></svg>`,
+  person:`<svg class="obj" width="70" height="150" viewBox="0 0 70 150"><circle cx="35" cy="24" r="16" fill="#f4b483"/><path d="M18 56 q17 -16 34 0 l-4 50 l-26 0 z" fill="#3a7ca5"/><rect x="24" y="104" width="9" height="42" rx="4" fill="#26405a"/><rect x="37" y="104" width="9" height="42" rx="4" fill="#26405a"/></svg>`
+};
+
+// ════════════════ TIMELINE ════════════════
+const DUR = 72; // seconds
+const stage = document.getElementById('stage');
+const charEl = document.getElementById('char');
+const hazardLayer = document.getElementById('hazardLayer');
+const capEl = document.getElementById('caption');
+const zoneFlash = document.getElementById('zoneFlash');
+const speechUser = document.getElementById('speechUser');
+const speechAI = document.getElementById('speechAI');
+const progress = document.getElementById('progress');
+const scrollEls = [document.getElementById('cityFar'),document.getElementById('cityNear'),document.getElementById('roadLine')];
+
+// hazard spawn events {t, type, tag, cls, life}
+const HAZARDS = [
+  { t:13, type:'pole',    tag:'pole · 0.84',     cls:'amber', life:9 },
+  { t:24, type:'pothole', tag:'pothole · 0.79',  cls:'amber', life:8, low:true },
+  { t:34, type:'cyclist', tag:'cyclist · 0.88',  cls:'scan',  life:7 },
+  { t:44, type:'vehicle', tag:'vehicle · 0.94 · NEAR', cls:'red', life:8, urgent:true },
+  { t:58, type:'crosswalk',tag:'crosswalk · 0.91',cls:'good', life:9, low:true },
+  { t:62, type:'person',  tag:'person · 0.73',   cls:'good',  life:8 },
+];
+// captions {t, html, dur}
+const CAPTIONS = [
+  { t:3,  html:'Independence shouldn’t depend on luck.', dur:4 },
+  { t:9,  html:'AXON sees the world a step ahead.', dur:4 },
+  { t:16, html:'<span class="warn">⚠ Obstacle ahead</span> — pole, slightly right', dur:5 },
+  { t:27, html:'<span class="warn">⚠ Caution</span> — uneven ground', dur:4.5 },
+  { t:37, html:'Cyclist passing on your left', dur:4 },
+  { t:47, html:'<span class="stop">⛔ Vehicle approaching — please stop</span>', dur:5 },
+  { t:64, html:'<span class="ok">✓ Crosswalk clear — you’re safe to cross</span>', dur:5 },
+];
+const orb=document.getElementById('orb'), orbLabel=document.getElementById('orbLabel');
+const MOMENTS = [
+  { t:10,   fn:()=> say("AXON active. I'll watch the path ahead.", {pitch:1.03}) },
+  { t:47,   fn:()=> say("Vehicle approaching. Please stop.", {rate:1.05}) },
+  { t:50,   fn:()=>{ orbWake(); speechUser.textContent='Hey AXON — is it safe to cross?'; speechUser.classList.add('show'); } },
+  { t:52.4, fn:()=> orbThink() },
+  { t:53.6, fn:()=>{ orbSpeak();
+      speechAI.innerHTML='The crosswalk is clear — you’re safe to cross <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>';
+      speechAI.classList.add('show');
+      say("The vehicle has passed. The crosswalk ahead is clear. You are safe to cross now."); } },
+  { t:59,   fn:()=> orbSleep() },
+  { t:68,   fn:()=> say("Seeing the world. For those who cannot.", {rate:.94}) },
+];
+
+let running=false, startT=0, lastT=DUR, timers=[];
+const spawned=new Set(), capShown=new Set(), speechShown=new Set(), momentsShown=new Set();
+
+function clearTimers(){ timers.forEach(id=>clearTimeout(id)); timers=[]; }
+function resetCycle(){
+  clearTimers(); hazardLayer.innerHTML='';
+  spawned.clear(); capShown.clear(); speechShown.clear(); momentsShown.clear();
+  capEl.className='caption'; zoneFlash.className='zone-flash';
+  speechUser.classList.remove('show'); speechAI.classList.remove('show');
+  charEl.classList.remove('stopped','alert');
+  scrollEls.forEach(e=>e.classList.remove('paused'));
+  orbSleep(); duck(false);
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
+function spawnHazard(ev){
+  const h=document.createElement('div');
+  h.className='hazard move'; h.style.setProperty('--life', ev.life+'s');
+  h.style.bottom = ev.low ? '17%' : '18%';
+  h.innerHTML = HAZ[ev.type] +
+    `<div class="det-box ${ev.cls}"></div><div class="det-tag ${ev.cls}">${ev.tag}</div><div class="ping"></div>`;
+  hazardLayer.appendChild(h);
+  // detection lands ~38% into its travel (when it's in front of the walker)
+  const detectAt = ev.life*1000*0.40;
+  timers.push(setTimeout(()=>{
+    h.classList.add('detected');
+    charEl.classList.add('alert');
+    chime(ev.urgent?'alert':'detect');
+    timers.push(setTimeout(()=>charEl.classList.remove('alert'), 1600));
+    if(ev.urgent){
+      zoneFlash.classList.add('on');
+      charEl.classList.add('stopped');
+      scrollEls.forEach(e=>e.classList.add('paused'));
+      // resume walking after the voice beat
+      timers.push(setTimeout(()=>{
+        charEl.classList.remove('stopped');
+        scrollEls.forEach(e=>e.classList.remove('paused'));
+      }, 13500));
+      timers.push(setTimeout(()=>zoneFlash.classList.remove('on'), 2200));
+    }
+  }, detectAt));
+  // auto-remove
+  timers.push(setTimeout(()=>h.remove(), ev.life*1000+200));
+}
+
+function showCaption(c){
+  capEl.innerHTML=c.html; capEl.className='caption show';
+  timers.push(setTimeout(()=>{ capEl.className='caption hide'; }, c.dur*1000));
+}
+function showSpeech(s){ s.el.classList.add('show'); timers.push(setTimeout(()=>s.el.classList.remove('show'),3600)); }
+
+function frame(now){
+  if(!running) return;
+  const t = ((now-startT)/1000) % DUR;
+  if(t < lastT) resetCycle();      // wrapped → new cycle
+  lastT = t;
+
+  HAZARDS.forEach((ev,i)=>{ if(t>=ev.t && !spawned.has(i)){ spawned.add(i); spawnHazard(ev); } });
+  CAPTIONS.forEach((c,i)=>{ if(t>=c.t && !capShown.has(i)){ capShown.add(i); showCaption(c); } });
+  MOMENTS.forEach((m,i)=>{ if(t>=m.t && !momentsShown.has(i)){ momentsShown.add(i); m.fn(); } });
+
+  progress.style.width = (t/DUR*100)+'%';
+  requestAnimationFrame(frame);
+}
+
+// ════════════════ MUSIC (procedural, pentatonic — or music.mp3 if present) ════════════════
+let actx=null, master=null, muted=false, useFile=false, fileEl=null, arpTimer=null;
+const PENT=[261.63,293.66,329.63,392.00,440.00,523.25,587.33,659.25]; // C-major pentatonic, 2 oct
+function startAudio(){
+  // try a user-supplied music.mp3 first
+  fileEl=new Audio('music.mp3'); fileEl.loop=true; fileEl.volume=0.65;
+  fileEl.play().then(()=>{ useFile=true; }).catch(()=>{ useFile=false; buildSynth(); });
+  // give the file ~250ms; if it didn't start, synth is already building in catch
+  setTimeout(()=>{ if(!useFile && !actx) buildSynth(); }, 300);
+}
+function buildSynth(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; actx=new AC();
+    master=actx.createGain(); master.gain.value=0; master.connect(actx.destination);
+    // gentle reverb-ish delay
+    const dl=actx.createDelay(); dl.delayTime.value=0.33;
+    const fb=actx.createGain(); fb.gain.value=0.30; dl.connect(fb); fb.connect(dl); dl.connect(master);
+    const air=actx.createBiquadFilter(); air.type='lowpass'; air.frequency.value=2600; air.connect(master); air.connect(dl);
+    window.__bus=air;
+    // warm pad (C major add9)
+    [130.81,196.00,329.63,392.00].forEach((f,i)=>{
+      const o=actx.createOscillator(); o.type=i<2?'sine':'triangle'; o.frequency.value=f;
+      const g=actx.createGain(); g.gain.value=0.05/(i*0.4+1);
+      const lfo=actx.createOscillator(); lfo.frequency.value=0.05+i*0.01; const lg=actx.createGain(); lg.gain.value=2.2;
+      lfo.connect(lg); lg.connect(o.detune); lfo.start(); o.connect(g); g.connect(air); o.start();
+    });
+    // soft bass pulse
+    function bass(){ if(!actx) return; const o=actx.createOscillator(); o.type='sine'; o.frequency.value=65.41;
+      const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(master); const t=actx.currentTime;
+      g.gain.linearRampToValueAtTime(0.18,t+0.05); g.gain.exponentialRampToValueAtTime(0.001,t+1.6); o.start(t); o.stop(t+1.7); }
+    bass(); setInterval(bass,3200);
+    // arpeggio — pleasant wandering pentatonic
+    let step=0;
+    function arp(){
+      if(!actx) return;
+      const pat=[0,2,4,2,3,5,4,2,1,3,5,7,5,3,2,0];
+      const idx=pat[step%pat.length]; step++;
+      const f=PENT[idx]; const t=actx.currentTime;
+      const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=f;
+      const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=f*2;
+      const g=actx.createGain(); g.gain.value=0; o.connect(g); o2.connect(g); g.connect(air);
+      g.gain.linearRampToValueAtTime(0.12,t+0.02); g.gain.exponentialRampToValueAtTime(0.0008,t+0.9);
+      o.start(t); o2.start(t); o.stop(t+1); o2.stop(t+1);
+    }
+    arpTimer=setInterval(arp,340);
+    master.gain.setValueAtTime(0,actx.currentTime);
+    master.gain.linearRampToValueAtTime(0.6,actx.currentTime+2.5);
+  }catch(e){ actx=null; }
+}
+function chime(kind){
+  if(useFile||!actx||muted) return;
+  const t=actx.currentTime;
+  const notes = kind==='alert' ? [440.00,440.00] : [523.25,659.25]; // alert=two same; detect=rising third
+  notes.forEach((f,i)=>{
+    const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(window.__bus||master);
+    const st=t+i*0.14; g.gain.linearRampToValueAtTime(kind==='alert'?0.16:0.12,st+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0008,st+0.6); o.start(st); o.stop(st+0.7);
+  });
+}
+
+// ════════════════ HEY AXON · VOICE + ORB ════════════════
+function duck(on){
+  if(useFile&&fileEl){ fileEl.volume = on?0.2:0.65; return; }
+  if(master&&actx) master.gain.linearRampToValueAtTime(muted?0:(on?0.16:0.6), actx.currentTime+0.25);
+}
+let voice=null;
+function pickVoice(){
+  try{ const vs=speechSynthesis.getVoices();
+    voice = vs.find(v=>/Samantha|Google US English|Google UK English Female|Karen|Moira|Tessa|Victoria|Ava/i.test(v.name))
+         || vs.find(v=>v.lang && v.lang.toLowerCase().startsWith('en')) || vs[0] || null;
+  }catch(e){}
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+function say(text, opts){
+  opts=opts||{};
+  if(!('speechSynthesis' in window) || muted){ opts.onend&&opts.onend(); return; }
+  duck(true);
+  const u=new SpeechSynthesisUtterance(text);
+  if(voice) u.voice=voice;
+  u.rate=opts.rate||1; u.pitch=opts.pitch||1; u.volume=1;
+  u.onend  =()=>{ duck(false); opts.onend&&opts.onend(); };
+  u.onerror=()=>{ duck(false); opts.onend&&opts.onend(); };
+  try{ speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){ duck(false); }
+}
+function orbWake(){ orb.classList.add('show','listening'); orb.classList.remove('thinking','speaking'); orbLabel.textContent='Listening…'; wakeChime(); }
+function orbThink(){ orb.classList.remove('listening','speaking'); orb.classList.add('show','thinking'); orbLabel.textContent='Thinking…'; }
+function orbSpeak(){ orb.classList.remove('listening','thinking'); orb.classList.add('show','speaking'); orbLabel.innerHTML='AX<span class="dot">O</span>N'; }
+function orbSleep(){ if(orb) orb.classList.remove('show','listening','thinking','speaking'); }
+function wakeChime(){
+  if(useFile||!actx||muted) return;
+  const t=actx.currentTime;
+  [523.25,659.25,783.99].forEach((f,i)=>{
+    const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(window.__bus||master);
+    const st=t+i*0.1; g.gain.linearRampToValueAtTime(0.12,st+0.02); g.gain.exponentialRampToValueAtTime(0.0008,st+0.5);
+    o.start(st); o.stop(st+0.55);
+  });
+}
+
+// ════════════════ CONTROLS ════════════════
+const entry=document.getElementById('entry');
+function begin(){
+  entry.classList.add('gone'); startAudio();
+  if(stage.requestFullscreen) stage.requestFullscreen().catch(()=>{});
+  else if(stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+  running=true; startT=performance.now(); lastT=DUR; resetCycle();
+  requestAnimationFrame(frame);
+}
+entry.addEventListener('click', begin);
+document.getElementById('muteBtn').addEventListener('click',(e)=>{
+  e.stopPropagation(); muted=!muted;
+  if(useFile&&fileEl) fileEl.muted=muted;
+  else if(master&&actx) master.gain.linearRampToValueAtTime(muted?0:0.6, actx.currentTime+0.3);
+  if(muted && 'speechSynthesis' in window) speechSynthesis.cancel();
+  e.currentTarget.textContent= muted?'♪ muted':'♪ sound on';
+});
+document.getElementById('exitBtn').addEventListener('click',(e)=>{ e.stopPropagation(); if(document.fullscreenElement) document.exitFullscreen(); });
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); lastT=DUR; resetCycle(); }
+});
+</script>
+</body>
+</html>

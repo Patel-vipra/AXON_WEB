@@ -712,6 +712,27 @@
     .dual-loop-wrap { padding: 16px 12px; }
     .section-title { letter-spacing: -0.5px; }
   }
+
+  /* ── LIVE SHOWCASE NAV BUTTON ── */
+  .nav-live {
+    display: inline-flex !important; align-items: center; gap: 8px;
+    padding: 7px 16px !important; border-radius: 100px;
+    border: 1px solid var(--magenta-dim);
+    background: linear-gradient(90deg, var(--magenta-dim), var(--cyan-dim));
+    color: var(--text-primary) !important; text-transform: uppercase;
+    letter-spacing: 1.5px !important; font-weight: 600;
+    animation: live-pulse 2.4s ease-in-out infinite;
+  }
+  .nav-live::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--magenta); box-shadow: 0 0 8px var(--magenta);
+    animation: blink 1.4s infinite;
+  }
+  .nav-live:hover { color: #fff !important; border-color: var(--magenta); }
+  @keyframes live-pulse {
+    0%,100% { box-shadow: 0 0 0 0 var(--magenta-dim); }
+    50% { box-shadow: 0 0 18px 2px var(--magenta-dim); }
+  }
 </style>
 </head>
 <body>
@@ -726,6 +747,7 @@
     <a href="#metrics">Results</a>
     <a href="#dataset">Dataset</a>
     <a href="#team">Team</a>
+    <a href="axon-cinematic.html" class="nav-live">Live Showcase</a>
   </div>
 </nav>
 
