@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+start-server.command
+# original screenshots (clean-named copies are tracked)
+Screenshot*.png
