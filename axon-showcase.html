@@ -684,6 +684,10 @@
   @media (max-width: 768px) {
     nav { padding: 16px 20px; }
     .nav-links a:not(.nav-live) { display: none; }
+    .nav-links { gap: 8px; }
+    .nav-logo { font-size: 18px; letter-spacing: 4px; }
+    .nav-logo span { display: none; }
+    .nav-links a.nav-live { padding: 5px 9px !important; font-size: 10px; letter-spacing: 1px !important; }
     section { padding: 80px 20px; }
     .problem-grid, .dataset-stats, .tier-section, .screenshot-grid, .challenge-cols { grid-template-columns: 1fr; }
     .metrics-grid { grid-template-columns: repeat(2, 1fr); }
@@ -729,6 +733,12 @@
     animation: blink 1.4s infinite;
   }
   .nav-live:hover { color: #fff !important; border-color: var(--magenta); }
+  .nav-live.pov {
+    border-color: #00e5ff55;
+    background: linear-gradient(90deg, var(--cyan-dim), #7b61ff33);
+  }
+  .nav-live.pov::before { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .nav-live.pov:hover { border-color: var(--cyan); }
   @keyframes live-pulse {
     0%,100% { box-shadow: 0 0 0 0 var(--magenta-dim); }
     50% { box-shadow: 0 0 18px 2px var(--magenta-dim); }
@@ -748,6 +758,7 @@
     <a href="#dataset">Dataset</a>
     <a href="#team">Team</a>
     <a href="axon-cinematic.html" class="nav-live">Live Showcase</a>
+    <a href="axon-pov.html" class="nav-live pov">POV Film</a>
   </div>
 </nav>
 

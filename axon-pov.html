@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AXON — Through the Glasses</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Sora:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050508; --cyan:#00e5ff; --amber:#ffb300; --red:#ff4d6d; --green:#2ec4a6;
+    --text:#eaeaef; --text2:#8888a0; --dim:#55556a; --border:#1a1a2e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Outfit',sans-serif;color:var(--text);}
+
+  /* HUD type — JetBrains Mono, uppercase, tracked, glowing */
+  .hud{ font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:2px; }
+
+  #world{ position:fixed; inset:0; animation:camShake 7s ease-in-out infinite; }
+  @keyframes camShake{
+    0%,100%{ transform:translate(0,0); }
+    22%{ transform:translate(1.4px,-.9px); }
+    47%{ transform:translate(-1.1px,1.2px); }
+    71%{ transform:translate(.8px,.7px); }
+  }
+  #world.jolt{ animation:camJolt .38s linear 3; }
+  @keyframes camJolt{
+    0%,100%{ transform:translate(0,0); } 25%{ transform:translate(2px,-1.6px); }
+    50%{ transform:translate(-2px,1.4px); } 75%{ transform:translate(1.6px,1.8px); }
+  }
+
+  /* ───────── GLASSES OPTICS STACK (always on top) ───────── */
+  .vignette{ position:fixed; inset:0; z-index:60; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 48%, transparent 52%, #00000066 80%, #000000cc 100%); }
+  .scanlines{ position:fixed; inset:0; z-index:60; pointer-events:none;
+    background:repeating-linear-gradient(0deg, #ffffff0a 0 1px, transparent 1px 3px); opacity:.55; }
+  .grain{ position:fixed; inset:-60px; z-index:61; pointer-events:none; opacity:.07;
+    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    animation:grainJit .35s steps(2) infinite; }
+  @keyframes grainJit{ 0%{transform:translate(0,0)} 50%{transform:translate(-28px,18px)} 100%{transform:translate(22px,-24px)} }
+
+  /* chromatic aberration for bright HUD text */
+  .chroma{ text-shadow:1.5px 0 0 #ff4d6d55, -1.5px 0 0 #00e5ff55; }
+
+  /* ───────── SCENES ───────── */
+  .scene{ position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity .5s ease; }
+  .scene.on{ opacity:1; }
+  .scene.cut{ transition:none !important; }
+
+  /* ═══════ SCENE 1 — DARKNESS ═══════ */
+  #s1{ z-index:50; background:#020204; display:flex; align-items:center; justify-content:center; }
+  #s1 .smudge{ position:absolute; inset:0; filter:blur(40px) saturate(.25) brightness(.5);
+    background:radial-gradient(ellipse at 38% 64%, #16202a 0%, transparent 42%),
+               radial-gradient(ellipse at 70% 30%, #1a1620 0%, transparent 38%); }
+  #s1 .grain2{ position:absolute; inset:-60px; opacity:.22;
+    background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    animation:grainJit .28s steps(2) infinite; }
+  #s1 .line{ position:relative; max-width:30ch; text-align:center; font-family:'Sora',sans-serif;
+    font-weight:300; font-size:clamp(20px,2.6vw,38px); line-height:1.5; color:#aeb6c2;
+    opacity:0; transform:translateY(10px); transition:opacity 2s ease, transform 2s ease; padding:0 24px; }
+  #s1 .line strong{ font-weight:600; color:#dfe6ee; }
+  #s1 .line.in{ opacity:1; transform:translateY(0); }
+  #s1 .line.out{ opacity:0; transform:translateY(-8px); transition:opacity 1.1s ease, transform 1.1s ease; }
+  #s1 .static{ position:absolute; bottom:11%; left:50%; transform:translateX(-50%);
+    display:flex; gap:3px; align-items:center; height:26px; opacity:.3; }
+  #s1 .static i{ width:2px; background:#7c8794; border-radius:1px; }
+
+  /* ═══════ POV VIEW (scenes 2–5 live here) ═══════ */
+  #view{ z-index:10; background:#04060a; }
+  #view.zoom{ transform:scale(1.18); transition:transform 12s ease-in-out; }
+
+  /* CSS-perspective street */
+  .street{ position:absolute; inset:0; overflow:hidden; filter:saturate(.85); }
+  .horizon-glow{ position:absolute; left:0; right:0; top:34%; height:18%;
+    background:radial-gradient(ellipse at 50% 50%, #14333f66 0%, transparent 65%); }
+  .skyband{ position:absolute; left:0; right:0; top:0; height:42%;
+    background:linear-gradient(180deg, #04060a 0%, #081019 70%, #0d1b26 100%); }
+  .floorp{ position:absolute; left:-40%; right:-40%; top:42%; bottom:-4%;
+    background:
+      repeating-linear-gradient(90deg, #0e2a3733 0 2px, transparent 2px 11%),
+      repeating-linear-gradient(0deg, #0e2a3744 0 2px, transparent 2px 64px),
+      linear-gradient(180deg, #0a141d 0%, #0e1c28 100%);
+    transform:perspective(520px) rotateX(58deg); transform-origin:50% 0;
+    animation:floorMove 2.6s linear infinite; }
+  @keyframes floorMove{ from{ background-position:0 0, 0 0, 0 0; } to{ background-position:0 0, 0 64px, 0 0; } }
+  .wallL,.wallR{ position:absolute; top:6%; bottom:36%; width:26%; filter:blur(7px); opacity:.8; }
+  .wallL{ left:-3%; background:linear-gradient(105deg, #0c1822 20%, transparent 90%);
+    border-right:2px solid #11303f44; transform:perspective(500px) rotateY(48deg); transform-origin:left center; }
+  .wallR{ right:-3%; background:linear-gradient(255deg, #0a141f 20%, transparent 90%);
+    border-left:2px solid #11303f44; transform:perspective(500px) rotateY(-48deg); transform-origin:right center; }
+  .street .lamp{ position:absolute; width:7px; height:30%; top:16%; filter:blur(1.5px);
+    background:linear-gradient(180deg,#10303f, #0a1a24); }
+  .street .lamp::before{ content:''; position:absolute; top:-7px; left:-5px; width:17px; height:9px;
+    border-radius:5px; background:#1d4858; box-shadow:0 0 18px 4px #1d8aa766; }
+  .lampL{ left:13%; transform:scale(.92) skewX(2deg); } .lampR{ right:15%; top:18%; transform:scale(.7) skewX(-2deg); opacity:.7; }
+
+  /* ── corridor trapezoid HUD: FAR (top, narrow) → NEAR (bottom, wide) ── */
+  #corridor{ position:absolute; left:50%; bottom:4%; transform:translateX(-50%) scaleY(.94);
+    width:min(46%,640px); height:58%; opacity:0; pointer-events:none;
+    clip-path:polygon(41% 0, 59% 0, 100% 100%, 0 100%);
+    display:flex; flex-direction:column;
+    background:repeating-linear-gradient(90deg,#00e5ff0e 0 1px,transparent 1px 36px),
+               repeating-linear-gradient(0deg,#00e5ff0a 0 1px,transparent 1px 30px);
+    filter:drop-shadow(0 0 22px #00e5ff33);
+    transform-origin:bottom center;
+    transition:opacity .9s ease, transform .9s cubic-bezier(.2,.9,.3,1.2); }
+  #corridor.up{ opacity:.95; transform:translateX(-50%) scaleY(1); }
+  .zone{ position:relative; border-top:1px solid #00e5ff2e;
+    transition:background .45s ease, box-shadow .45s ease; }
+  .zone.zf{ flex:0 0 38%; background:#2ec4a614; }
+  .zone.zm{ flex:0 0 32%; background:#ffb30012; }
+  .zone.zn{ flex:0 0 30%; background:#ff4d6d12; }
+  .zone.lit.zf{ background:#2ec4a655; box-shadow:inset 0 0 42px #2ec4a6aa; }
+  .zone.lit.zm{ background:#ffb30050; box-shadow:inset 0 0 42px #ffb300aa; }
+  .zone.lit.zn{ background:#ff4d6d5c; box-shadow:inset 0 0 50px #ff4d6dcc; animation:zonePulse .65s ease-in-out infinite; }
+  @keyframes zonePulse{ 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.45)} }
+  #corridor.calm .zone.zf{ background:#2ec4a626; box-shadow:inset 0 0 30px #2ec4a644; }
+  #corridor.calm .zone.zm{ background:#ffb30020; box-shadow:inset 0 0 30px #ffb30038; }
+  #corridor.calm .zone.zn{ background:#ff4d6d1e; box-shadow:inset 0 0 30px #ff4d6d33; }
+  .zlabel{ position:absolute; right:8%; top:50%; transform:translateY(-50%);
+    font-size:clamp(9px,.9vw,12px); font-weight:700; opacity:.85; }
+  .zf .zlabel{ color:#7fe7d4; text-shadow:0 0 9px #2ec4a6; }
+  .zm .zlabel{ color:#ffd27f; text-shadow:0 0 9px #ffb300; }
+  .zn .zlabel{ color:#ff9eb2; text-shadow:0 0 9px #ff4d6d; }
+
+  /* scan sweep inside the corridor */
+  .sweep{ position:absolute; top:0; bottom:0; left:-22%; width:20%; opacity:0;
+    background:linear-gradient(90deg, transparent, #00e5ff2e 45%, #8ff4ff55 50%, #00e5ff2e 55%, transparent); }
+  #corridor.scanning .sweep{ opacity:1; animation:sweepLR 2.8s ease-in-out infinite alternate; }
+  @keyframes sweepLR{ from{ left:-10%; } to{ left:90%; } }
+
+  /* HUD status corners */
+  .hudline{ position:absolute; z-index:14; font-size:clamp(10px,1vw,13px); font-weight:600; opacity:0; transition:opacity .6s; }
+  .hudline.in{ opacity:1; }
+  #statTL{ top:calc(22px + env(safe-area-inset-top)); left:26px; color:#5f7f8e; }
+  #statTL b{ color:var(--red); animation:blinkDot 1.3s steps(1) infinite; }
+  #statBR{ right:26px; bottom:calc(22px + env(safe-area-inset-bottom)); color:#9adfee;
+    text-shadow:0 0 10px #00e5ff88; }
+  #statBR .ok{ color:var(--green); animation:pulseTxt 1.8s ease-in-out infinite; }
+  @keyframes blinkDot{ 0%,100%{opacity:1} 50%{opacity:.15} }
+  @keyframes pulseTxt{ 0%,100%{ text-shadow:0 0 8px #2ec4a688; } 50%{ text-shadow:0 0 18px #2ec4a6; } }
+  .fcorner{ position:absolute; width:26px; height:26px; opacity:0; transition:opacity .8s; z-index:13; }
+  .fcorner.in{ opacity:.5; }
+  .fcorner.tl{ top:18px; left:18px; border-top:2px solid #00e5ff77; border-left:2px solid #00e5ff77; }
+  .fcorner.tr{ top:18px; right:18px; border-top:2px solid #00e5ff77; border-right:2px solid #00e5ff77; }
+  .fcorner.bl{ bottom:18px; left:18px; border-bottom:2px solid #00e5ff77; border-left:2px solid #00e5ff77; }
+  .fcorner.br{ bottom:18px; right:18px; border-bottom:2px solid #00e5ff77; border-right:2px solid #00e5ff77; }
+
+  /* ═══════ SCENE 3 — HAZARD ═══════ */
+  #hazard{ position:absolute; left:50%; top:27%; width:clamp(90px,11vw,150px); z-index:12;
+    opacity:0; will-change:transform; }
+  #hazard.go{ animation:approach 16s linear forwards; }
+  @keyframes approach{
+    0%  { transform:translate(-50%,0) scale(.3);            opacity:0; }
+    5%  { opacity:1; }
+    34% { transform:translate(-50%,9vh)  scale(.58); }
+    66% { transform:translate(-50%,23vh) scale(1.06); }
+    85% { transform:translate(-50%,30vh) scale(1.34);       opacity:1; }
+    92% { transform:translate(-150%,36vh) scale(1.55);      opacity:1; }
+    100%{ transform:translate(-340%,42vh) scale(1.75);      opacity:0; }
+  }
+  #hazard svg{ display:block; width:100%; overflow:visible; }
+  #hazard .fig{ animation:figSway 1.1s ease-in-out infinite; transform-origin:50% 90%; }
+  @keyframes figSway{ 0%,100%{transform:rotate(1.2deg)} 50%{transform:rotate(-1.2deg)} }
+
+  /* machine-vision lock-on (ported from axon-cinematic.html) */
+  .det-box{ --c:var(--green); position:absolute; inset:-8% -14%; border-radius:6px; opacity:0; transition:--c .4s; }
+  #hazard.zmid .det-box{ --c:var(--amber); }
+  #hazard.znear .det-box{ --c:var(--red); }
+  .det-box::before{
+    content:''; position:absolute; inset:0; opacity:0;
+    background:
+      linear-gradient(var(--c),var(--c)) 0 0/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 0/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 0/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 0/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 100%/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 0 100%/3px 16px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 100%/16px 3px no-repeat,
+      linear-gradient(var(--c),var(--c)) 100% 100%/3px 16px no-repeat;
+    filter:drop-shadow(0 0 6px var(--c));
+    transition:background .35s; }
+  .det-box::after{ content:''; position:absolute; inset:0; border:2px solid var(--c); border-radius:6px;
+    opacity:0; transform:scale(1.06); box-shadow:0 0 18px -2px var(--c), inset 0 0 12px -6px var(--c);
+    transition:border-color .35s, box-shadow .35s; }
+  #hazard.detected .det-box{ opacity:1; }
+  #hazard.detected .det-box::before{ animation:cornerIn .55s both; }
+  #hazard.detected .det-box::after{ animation:frameIn .55s .22s both; }
+  @keyframes cornerIn{ 0%{opacity:0;transform:scale(1.3)} 45%{opacity:1} 100%{opacity:1;transform:scale(1)} }
+  @keyframes frameIn{ 0%{opacity:0;transform:scale(1.06)} 100%{opacity:1;transform:scale(1)} }
+  .ping{ position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%;
+    border:2px solid var(--cyan); transform:translate(-50%,-50%); opacity:0; }
+  #hazard.detected .ping{ animation:ping .9s ease-out .1s 2; }
+  @keyframes ping{ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.4)} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.4)} }
+  /* tag slides up from BELOW the box */
+  .det-tag{ position:absolute; bottom:-34px; left:50%; transform:translate(-50%,8px);
+    font-size:12px; font-weight:700; padding:3px 10px; border-radius:5px; white-space:nowrap;
+    background:var(--green); color:#03241c; opacity:0; transition:background .35s, color .35s; }
+  #hazard.zmid .det-tag{ background:var(--amber); color:#2b1d00; }
+  #hazard.znear .det-tag{ background:var(--red); color:#fff; }
+  #hazard.detected .det-tag{ animation:tagUp .4s .2s both; }
+  @keyframes tagUp{ from{opacity:0;transform:translate(-50%,10px)} to{opacity:1;transform:translate(-50%,0)} }
+
+  /* red proximity flash */
+  #flash{ position:fixed; inset:0; z-index:42; pointer-events:none; opacity:0;
+    background:radial-gradient(ellipse at 50% 60%, #ff4d6d2e 0%, #ff4d6d14 45%, transparent 75%); }
+  #flash.go{ animation:redFlash .5s ease-in-out 3; }
+  @keyframes redFlash{ 0%,100%{opacity:0} 50%{opacity:1} }
+
+  /* bottom alert bar: waveform + typed alert text */
+  #alertbar{ position:absolute; left:50%; bottom:calc(7% + env(safe-area-inset-bottom));
+    transform:translate(-50%,14px); z-index:15; display:flex; align-items:center; gap:14px;
+    background:#0a121add; border:1px solid #00e5ff2e; border-radius:12px; padding:12px 22px;
+    opacity:0; transition:opacity .4s, transform .4s; backdrop-filter:blur(8px);
+    box-shadow:0 14px 40px #00000088; }
+  #alertbar.in{ opacity:1; transform:translate(-50%,0); }
+  #alertbar.warn{ border-color:#ff4d6d66; box-shadow:0 14px 40px #00000088, 0 0 22px #ff4d6d33; }
+  .awave{ display:flex; gap:3px; align-items:center; height:22px; }
+  .awave i{ width:3px; height:8px; border-radius:2px; background:var(--cyan); box-shadow:0 0 7px #00e5ff;
+    animation:awv .7s ease-in-out infinite; }
+  #alertbar.warn .awave i{ background:var(--red); box-shadow:0 0 7px #ff4d6d; }
+  @keyframes awv{ 0%,100%{height:6px} 50%{height:20px} }
+  #alertText{ font-size:clamp(13px,1.25vw,17px); font-weight:600; color:#cfeef7; min-width:1ch; }
+  #alertText .stop{ color:var(--red); font-weight:800; }
+
+  /* ═══════ SCENE 4 — ASK AXON ═══════ */
+  #ask{ position:absolute; left:50%; bottom:calc(8% + env(safe-area-inset-bottom)); transform:translateX(-50%);
+    z-index:16; display:flex; flex-direction:column; align-items:center; gap:18px; width:min(620px,86vw); }
+  #tapIcon{ display:flex; flex-direction:column; align-items:center; gap:12px; opacity:0;
+    transform:translateY(8px); transition:opacity .5s, transform .5s; }
+  #tapIcon.in{ opacity:1; transform:translateY(0); }
+  .tap-stage{ position:relative; width:74px; height:74px; display:flex; align-items:center; justify-content:center; }
+  .tap-glasses{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .tap-ring{ position:absolute; inset:0; border:2px solid #00e5ff55; border-radius:50%;
+    animation:tapRing 1.6s ease-out infinite; }
+  .tap-ring:nth-child(2){ animation-delay:.55s; }
+  @keyframes tapRing{ 0%{opacity:.8; transform:scale(.55)} 100%{opacity:0; transform:scale(1.5)} }
+  .tap-dot{ position:absolute; right:9px; top:20px; width:13px; height:13px; border-radius:50%;
+    background:var(--cyan); box-shadow:0 0 12px var(--cyan); animation:tapDot 1.6s ease-in-out infinite; }
+  @keyframes tapDot{ 0%,100%{transform:scale(1)} 18%{transform:scale(.62)} 36%{transform:scale(1)} }
+  #tapIcon .tlabel{ font-size:12px; font-weight:700; color:#8fd7e6; text-shadow:0 0 9px #00e5ff66; }
+  #tapIcon.fired .tap-stage{ animation:tapFire .5s ease both; }
+  @keyframes tapFire{ 30%{ filter:brightness(2.2) drop-shadow(0 0 18px #00e5ff); } 100%{ filter:none; } }
+
+  .pill{ width:100%; display:flex; align-items:center; gap:14px;
+    background:#0b141cdd; border:1px solid #00e5ff2e; border-radius:16px; padding:15px 22px;
+    opacity:0; transform:translateY(10px); transition:opacity .45s, transform .45s;
+    backdrop-filter:blur(12px); box-shadow:0 16px 44px #000000aa; }
+  .pill.in{ opacity:1; transform:translateY(0); }
+  .mwave{ display:flex; gap:3px; align-items:center; height:26px; flex:0 0 auto; }
+  .mwave i{ width:3.5px; height:9px; border-radius:2px; background:var(--cyan); box-shadow:0 0 8px #00e5ff;
+    animation:awv .62s ease-in-out infinite; }
+  #qText{ font-size:clamp(15px,1.5vw,20px); font-weight:600; color:#eaf6fa; }
+  #qPill.frozen{ border-color:#00e5ff66; }
+  #qPill.frozen #qText{ box-shadow:0 2px 0 0 var(--cyan); padding-bottom:3px;
+    text-shadow:0 0 12px #00e5ff55; }
+  #qPill.frozen .mwave i{ animation-play-state:paused; height:6px; opacity:.45; }
+
+  /* frosted answer pill: neural spinner + radar sweeps + token-typed answer */
+  #aPill{ position:relative; overflow:hidden; background:#0d161fc9; border-color:#2ec4a62e; }
+  .neuro{ position:relative; width:40px; height:40px; flex:0 0 auto; }
+  .neuro .ring{ position:absolute; inset:0; border-radius:50%; border:2px solid #00e5ff44;
+    border-top-color:var(--cyan); animation:spin 1.1s linear infinite;
+    box-shadow:0 0 14px #00e5ff44, inset 0 0 8px #00e5ff22; }
+  .neuro svg{ position:absolute; inset:6px; animation:spin 2.6s linear infinite reverse; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #aPill.answered .neuro .ring{ animation:none; border-color:#2ec4a666; border-top-color:var(--green);
+    box-shadow:0 0 14px #2ec4a655; }
+  #aPill.answered .neuro svg{ animation:none; }
+  .radar{ position:absolute; top:0; bottom:0; left:-30%; width:26%; opacity:0; pointer-events:none;
+    background:linear-gradient(90deg, transparent, #00e5ff20 40%, #9df3ff66 50%, #00e5ff20 60%, transparent); }
+  #aPill.scanning .radar{ opacity:1; animation:radarLR .4s linear 3; }
+  @keyframes radarLR{ from{ left:-30%; } to{ left:104%; } }
+  #aText{ font-size:clamp(15px,1.5vw,20px); font-weight:500; color:#dff7f1; line-height:1.45; min-height:1.4em; }
+  .cursor{ display:inline-block; color:var(--cyan); animation:curBlink .5s steps(1) infinite; }
+  @keyframes curBlink{ 0%,100%{opacity:1} 50%{opacity:.1} }
+
+  /* ═══════ SCENE 5 — TAGLINE ═══════ */
+  #tagline{ position:absolute; inset:0; z-index:20; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; pointer-events:none; text-align:center; }
+  #tagline .brand{ font-family:'Sora',sans-serif; font-weight:900; letter-spacing:.06em;
+    font-size:clamp(70px,12.5vw,190px); color:#bff6ff; opacity:0; transform:scale(.96);
+    text-shadow:0 0 40px #00e5ff88, 0 0 110px #00e5ff44, 2px 0 0 #ff4d6d33, -2px 0 0 #00e5ff66;
+    transition:opacity 2s ease, transform 2.4s ease; }
+  #tagline .brand .dot{ color:var(--cyan); text-shadow:0 0 46px var(--cyan); }
+  #tagline .brand.in{ opacity:1; transform:scale(1); }
+  #tagline .wwf{ font-family:'Sora',sans-serif; font-weight:300; letter-spacing:.34em; text-transform:uppercase;
+    font-size:clamp(14px,1.9vw,26px); color:#9fb3bd; opacity:0; transform:translateY(8px);
+    transition:opacity 1.4s ease .2s, transform 1.4s ease .2s; }
+  #tagline .wwf.in{ opacity:1; transform:translateY(0); }
+  #tagline.bye .brand, #tagline.bye .wwf{ opacity:0; transition:opacity 1s ease; }
+
+  /* ═══════ SCENE 6 — END CARD ═══════ */
+  #s6{ z-index:52; background:#030305; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:34px; }
+  #pfield{ position:absolute; inset:0; overflow:hidden; }
+  #pfield i{ position:absolute; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 8px #00e5ff88; animation:rise linear infinite; opacity:0; }
+  @keyframes rise{
+    0%{ transform:translate(0,0); opacity:0; }
+    12%{ opacity:var(--o,.5); }
+    88%{ opacity:var(--o,.5); }
+    100%{ transform:translate(var(--dx,0px),-46vh); opacity:0; } }
+  #s6 .brand{ position:relative; font-family:'Sora',sans-serif; font-weight:900; letter-spacing:.06em;
+    font-size:clamp(56px,9vw,130px); color:#d8f8ff; text-shadow:0 0 34px #00e5ff66;
+    opacity:0; transform:translateY(12px); transition:opacity 1.2s ease, transform 1.2s ease; }
+  #s6 .brand .dot{ color:var(--cyan); }
+  #s6 .brand.in{ opacity:1; transform:translateY(0); }
+  #pills{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+  #pills .stat{ font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:2px;
+    font-size:clamp(11px,1.1vw,14px); font-weight:600; color:#bfe9f2;
+    border:1px solid var(--border); background:#0f0f18cc; border-radius:100px; padding:11px 24px;
+    box-shadow:0 0 0 1px #00e5ff14, 0 10px 30px #00000088;
+    opacity:0; transform:translateY(14px) scale(.94); transition:opacity .6s ease, transform .6s cubic-bezier(.2,.9,.3,1.3); }
+  #pills.in .stat{ opacity:1; transform:translateY(0) scale(1); }
+  #pills.in .stat:nth-child(1){ transition-delay:0s; }
+  #pills.in .stat:nth-child(2){ transition-delay:.22s; }
+  #pills.in .stat:nth-child(3){ transition-delay:.44s; }
+  #pills .stat b{ color:var(--cyan); font-weight:700; }
+  #builtline{ font-family:'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:3px;
+    font-size:clamp(10px,1vw,13px); color:var(--dim); opacity:0; transition:opacity 1.4s ease; }
+  #builtline.in{ opacity:1; }
+  #s6.bye{ opacity:0; transition:opacity 1.2s ease; }
+
+  /* ───────── CONTROLS ───────── */
+  .ctl{ position:fixed; top:calc(18px + env(safe-area-inset-top)); right:18px; z-index:70;
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:1px;
+    color:#9adfee; background:#0a121acc; border:1px solid #00e5ff2e; border-radius:9px;
+    padding:8px 13px; cursor:pointer; backdrop-filter:blur(8px); transition:all .2s;
+    user-select:none; opacity:.55; }
+  .ctl:hover{ opacity:1; border-color:#00e5ff77; }
+  .esc-hint{ position:fixed; bottom:calc(13px + env(safe-area-inset-bottom)); right:18px; z-index:62;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:2px; color:#3c4a56; }
+  @media (pointer:coarse){ .esc-hint{ display:none; } .ctl{ opacity:.85; padding:11px 15px; } }
+
+  /* ───────── ENTRY GATE ───────── */
+  #entry{ position:fixed; inset:0; z-index:200; cursor:pointer; background:#030305;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+    transition:opacity .9s ease; }
+  #entry.gone{ opacity:0; pointer-events:none; }
+  #entry .e-brand{ font-family:'Sora',sans-serif; font-weight:900; letter-spacing:.06em;
+    font-size:clamp(64px,12vw,160px); color:#d8f8ff; text-shadow:0 0 40px #00e5ff55;
+    animation:entryBreath 4s ease-in-out infinite; }
+  @keyframes entryBreath{ 0%,100%{ text-shadow:0 0 28px #00e5ff44; } 50%{ text-shadow:0 0 56px #00e5ff77; } }
+  #entry .e-brand .dot{ color:var(--cyan); }
+  #entry .e-sub{ font-family:'JetBrains Mono',monospace; letter-spacing:.46em; text-transform:uppercase;
+    font-size:clamp(10px,1.3vw,14px); color:#5f7f8e; margin-top:-12px; }
+  #entry .e-btn{ display:flex; align-items:center; gap:13px; padding:16px 36px; border-radius:100px;
+    border:1px solid #00e5ff44; background:#0a141c; color:#dff5fb; font-family:'Outfit',sans-serif;
+    font-weight:600; font-size:clamp(15px,1.6vw,18px); letter-spacing:.5px; cursor:pointer;
+    box-shadow:0 0 0 1px #00e5ff11, 0 18px 50px #000000cc; animation:btnFloat 2.4s ease-in-out infinite; }
+  @keyframes btnFloat{ 0%,100%{ transform:translateY(0); box-shadow:0 0 24px #00e5ff22, 0 18px 50px #000c; }
+    50%{ transform:translateY(-4px); box-shadow:0 0 42px #00e5ff44, 0 22px 54px #000c; } }
+  #entry .e-play{ width:30px; height:30px; border-radius:50%; background:var(--cyan);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px #00e5ff99; }
+  #entry .e-play svg{ fill:#03242c; width:12px; height:12px; margin-left:2px; }
+  #entry .e-note{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; color:#3c4a56; }
+</style>
+</head>
+<body>
+
+<!-- ENTRY GATE -->
+<div id="entry">
+  <div class="e-brand">AX<span class="dot">O</span>N</div>
+  <div class="e-sub">Through the Glasses</div>
+  <button class="e-btn">
+    <span class="e-play"><svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg></span>
+    Begin
+  </button>
+  <div class="e-note">FULLSCREEN + SOUND · 90 SECOND LOOP</div>
+</div>
+
+<div id="world">
+
+  <!-- ═══ POV VIEW (scenes 2–5) ═══ -->
+  <div class="scene" id="view">
+    <div class="street">
+      <div class="skyband"></div>
+      <div class="horizon-glow"></div>
+      <div class="floorp"></div>
+      <div class="wallL"></div><div class="wallR"></div>
+      <div class="lamp lampL"></div><div class="lamp lampR"></div>
+    </div>
+
+    <!-- collision corridor HUD -->
+    <div id="corridor">
+      <div class="zone zf"><span class="zlabel hud">Far</span></div>
+      <div class="zone zm"><span class="zlabel hud">Mid</span></div>
+      <div class="zone zn"><span class="zlabel hud">Near</span></div>
+      <div class="sweep"></div>
+    </div>
+
+    <!-- frame corners + status -->
+    <div class="fcorner tl"></div><div class="fcorner tr"></div>
+    <div class="fcorner bl"></div><div class="fcorner br"></div>
+    <div class="hudline hud" id="statTL"><b>●</b> CAM 01 · LIVE · 30 FPS</div>
+    <div class="hudline hud chroma" id="statBR"></div>
+
+    <!-- hazard (scene 3) -->
+    <div id="hazard">
+      <svg viewBox="0 0 100 200">
+        <g class="fig">
+          <ellipse cx="50" cy="194" rx="30" ry="5" fill="#00000055"/>
+          <circle cx="50" cy="26" r="17" fill="#0d1822" stroke="#1d4858" stroke-width="1.5"/>
+          <path d="M24 60 q26 -22 52 0 l-5 62 q-21 9 -42 0 z" fill="#0b141d" stroke="#1d4858" stroke-width="1.5"/>
+          <rect x="32" y="118" width="14" height="74" rx="7" fill="#0a121a" stroke="#16323f" stroke-width="1.2"/>
+          <rect x="54" y="118" width="14" height="74" rx="7" fill="#0a121a" stroke="#16323f" stroke-width="1.2"/>
+          <path d="M27 64 q-9 26 -4 46" stroke="#0d1f2a" stroke-width="9" fill="none" stroke-linecap="round"/>
+          <path d="M73 64 q9 26 4 46" stroke="#0d1f2a" stroke-width="9" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>
+      <div class="det-box"></div>
+      <div class="det-tag hud" id="detTag"></div>
+      <div class="ping"></div>
+    </div>
+
+    <!-- bottom alert bar -->
+    <div id="alertbar">
+      <span class="awave"><i></i><i style="animation-delay:.1s"></i><i style="animation-delay:.2s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.4s"></i></span>
+      <span id="alertText"></span>
+    </div>
+
+    <!-- ask AXON stack -->
+    <div id="ask">
+      <div id="qPill" class="pill">
+        <span class="mwave"><i></i><i style="animation-delay:.08s"></i><i style="animation-delay:.16s"></i><i style="animation-delay:.24s"></i><i style="animation-delay:.32s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.48s"></i></span>
+        <span id="qText"></span>
+      </div>
+      <div id="aPill" class="pill">
+        <span class="neuro">
+          <span class="ring"></span>
+          <svg viewBox="0 0 40 40">
+            <g stroke="#00e5ff" stroke-width="1" opacity=".9">
+              <line x1="20" y1="20" x2="20" y2="5"/><line x1="20" y1="20" x2="33" y2="13"/>
+              <line x1="20" y1="20" x2="33" y2="28"/><line x1="20" y1="20" x2="20" y2="35"/>
+              <line x1="20" y1="20" x2="7" y2="28"/><line x1="20" y1="20" x2="7" y2="13"/>
+            </g>
+            <g fill="#9df3ff">
+              <circle cx="20" cy="5" r="2.6"/><circle cx="33" cy="13" r="2.6"/><circle cx="33" cy="28" r="2.6"/>
+              <circle cx="20" cy="35" r="2.6"/><circle cx="7" cy="28" r="2.6"/><circle cx="7" cy="13" r="2.6"/>
+              <circle cx="20" cy="20" r="3.4" fill="#00e5ff"/>
+            </g>
+          </svg>
+        </span>
+        <span id="aText"></span>
+        <span class="radar"></span>
+      </div>
+      <div id="tapIcon">
+        <div class="tap-stage">
+          <span class="tap-ring"></span><span class="tap-ring"></span>
+          <span class="tap-glasses">
+            <svg width="56" height="26" viewBox="0 0 56 26">
+              <rect x="2" y="6" width="22" height="14" rx="6" fill="none" stroke="#7fd9ea" stroke-width="2"/>
+              <rect x="32" y="6" width="22" height="14" rx="6" fill="none" stroke="#7fd9ea" stroke-width="2"/>
+              <line x1="24" y1="11" x2="32" y2="11" stroke="#7fd9ea" stroke-width="2"/>
+            </svg>
+          </span>
+          <span class="tap-dot"></span>
+        </div>
+        <span class="tlabel hud">Tap to ask.</span>
+      </div>
+    </div>
+
+    <!-- tagline (scene 5) -->
+    <div id="tagline">
+      <div class="brand chroma">AX<span class="dot">O</span>N</div>
+      <div class="wwf">Walk Without Fear.</div>
+    </div>
+  </div>
+
+  <!-- ═══ SCENE 1 — DARKNESS ═══ -->
+  <div class="scene on" id="s1">
+    <div class="smudge"></div>
+    <div class="grain2"></div>
+    <div class="line" id="s1line">Every day, <strong>2.2 billion people</strong> navigate a world not designed for them.</div>
+    <div class="static" id="static"></div>
+  </div>
+
+  <!-- ═══ SCENE 6 — END CARD ═══ -->
+  <div class="scene" id="s6">
+    <div id="pfield"></div>
+    <div class="brand">AX<span class="dot">O</span>N</div>
+    <div id="pills">
+      <span class="stat"><b>23</b> Object Classes</span>
+      <span class="stat">Real-Time</span>
+      <span class="stat">Edge AI</span>
+    </div>
+    <div id="builtline">Built with YOLOv12 · GPT-4o · Meta AI Glasses</div>
+  </div>
+
+  <div id="flash"></div>
+</div>
+
+<!-- optics stack -->
+<div class="vignette"></div>
+<div class="scanlines"></div>
+<div class="grain"></div>
+
+<div class="ctl" id="muteBtn">♪ SOUND ON</div>
+<div class="esc-hint">ESC EXIT · R RESTART</div>
+
+<script>
+'use strict';
+// ════════════════ REFS ════════════════
+const $=id=>document.getElementById(id);
+const world=$('world'), view=$('view'), s1=$('s1'), s6=$('s6');
+const s1line=$('s1line'), corridor=$('corridor');
+const zf=corridor.querySelector('.zf'), zm=corridor.querySelector('.zm'), zn=corridor.querySelector('.zn');
+const statTL=$('statTL'), statBR=$('statBR');
+const hazard=$('hazard'), detTag=$('detTag'), flash=$('flash');
+const alertbar=$('alertbar'), alertText=$('alertText');
+const tapIcon=$('tapIcon'), qPill=$('qPill'), qText=$('qText'), aPill=$('aPill'), aText=$('aText');
+const tagline=$('tagline'), pills=$('pills'), builtline=$('builtline');
+const s6brand=s6.querySelector('.brand');
+const fcorners=[...document.querySelectorAll('.fcorner')];
+
+// scene-1 static bars + scene-6 particles (built once)
+(function(){
+  const st=$('static');
+  for(let i=0;i<54;i++){
+    const b=document.createElement('i');
+    b.style.height=(3+Math.random()*16)+'px';
+    b.style.animation=`awv ${(0.25+Math.random()*0.4).toFixed(2)}s ease-in-out ${(Math.random()*0.5).toFixed(2)}s infinite`;
+    st.appendChild(b);
+  }
+  const pf=$('pfield');
+  for(let i=0;i<42;i++){
+    const p=document.createElement('i');
+    const s=(1.5+Math.random()*2.8).toFixed(1);
+    p.style.width=s+'px'; p.style.height=s+'px';
+    p.style.left=(Math.random()*100)+'%';
+    p.style.top=(30+Math.random()*75)+'%';
+    p.style.setProperty('--dx',((Math.random()*60-30)|0)+'px');
+    p.style.setProperty('--o',(0.18+Math.random()*0.45).toFixed(2));
+    p.style.animationDuration=(7+Math.random()*9).toFixed(1)+'s';
+    p.style.animationDelay=(-Math.random()*12).toFixed(1)+'s';
+    pf.appendChild(p);
+  }
+})();
+
+// ════════════════ TIMERS / RESET ════════════════
+let running=false, startT=0, lastT=1e9, timers=[], ivls=[];
+const fired=new Set();
+function after(s,fn){ timers.push(setTimeout(fn,s*1000)); }
+function clearTimers(){ timers.forEach(clearTimeout); timers=[]; ivls.forEach(clearInterval); ivls=[]; }
+
+function hardCut(el,on){ el.classList.add('cut'); el.classList.toggle('on',on);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.remove('cut'))); }
+
+function resetCycle(){
+  clearTimers(); fired.clear();
+  hardCut(s1,true); s1line.classList.remove('in','out');
+  hardCut(view,false); view.classList.remove('zoom');
+  hardCut(s6,false); s6.classList.remove('bye');
+  corridor.classList.remove('up','scanning','calm');
+  [zf,zm,zn].forEach(z=>z.classList.remove('lit'));
+  statBR.classList.remove('in'); statTL.classList.remove('in');
+  fcorners.forEach(c=>c.classList.remove('in'));
+  hazard.classList.remove('go','detected','zmid','znear'); void hazard.offsetWidth;
+  detTag.textContent=''; flash.classList.remove('go');
+  alertbar.classList.remove('in','warn'); alertText.textContent='';
+  tapIcon.classList.remove('in','fired'); qPill.classList.remove('in','frozen');
+  aPill.classList.remove('in','scanning','answered'); qText.textContent=''; aText.textContent='';
+  tagline.classList.remove('bye');
+  tagline.querySelector('.brand').classList.remove('in');
+  tagline.querySelector('.wwf').classList.remove('in');
+  s6brand.classList.remove('in'); pills.classList.remove('in'); builtline.classList.remove('in');
+  world.classList.remove('jolt');
+  stopPad();
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+  duck(false);
+}
+
+// ════════════════ TEXT FX ════════════════
+const GLYPHS='ABCDEFGHJKLMNPQRSTUVWXYZ0123456789·#@%&!?';
+function scrambleText(el, finalText, ms){
+  const chars=[...finalText]; const t0=performance.now();
+  const iv=setInterval(()=>{
+    const p=Math.min((performance.now()-t0)/ms,1);
+    const locked=Math.floor(p*chars.length); let out='';
+    for(let i=0;i<chars.length;i++){
+      out += (i<locked||chars[i]===' '||chars[i]==='·') ? chars[i]
+           : GLYPHS[(Math.random()*GLYPHS.length)|0];
+    }
+    el.textContent=out;
+    if(p>=1){ el.textContent=finalText; clearInterval(iv); }
+  },34);
+  ivls.push(iv);
+}
+function typeText(el,text,speed,done){           // uniform letter-by-letter
+  let i=0;
+  (function step(){
+    i++; el.textContent=text.slice(0,i);
+    if(i<text.length) timers.push(setTimeout(step,speed));
+    else done&&done();
+  })();
+}
+function tokenType(el,text,done){                // irregular token bursts: 3–5 chars, 100–200ms gaps
+  let i=0;
+  const cur=document.createElement('span'); cur.className='cursor'; cur.textContent='▌';
+  (function burst(){
+    i=Math.min(i+3+((Math.random()*3)|0), text.length);
+    el.textContent=text.slice(0,i); el.appendChild(cur);
+    if(i<text.length) timers.push(setTimeout(burst,100+Math.random()*100));
+    else timers.push(setTimeout(()=>{ cur.remove(); done&&done(); },420));
+  })();
+}
+
+// ════════════════ AUDIO — dark drone → warm resolve ════════════════
+let actx=null, master=null, bus=null, muted=false, padNodes=[];
+function buildSynth(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; actx=new AC();
+    master=actx.createGain(); master.gain.value=0; master.connect(actx.destination);
+    const dl=actx.createDelay(); dl.delayTime.value=0.38;
+    const fb=actx.createGain(); fb.gain.value=0.28; dl.connect(fb); fb.connect(dl); dl.connect(master);
+    bus=actx.createBiquadFilter(); bus.type='lowpass'; bus.frequency.value=2100;
+    bus.connect(master); bus.connect(dl);
+    // dark drone: A1 + A2 + E3, slow detune breathing
+    [[55,'sine',.16],[110,'triangle',.06],[164.81,'sine',.03]].forEach(([f,w,v],i)=>{
+      const o=actx.createOscillator(); o.type=w; o.frequency.value=f;
+      const g=actx.createGain(); g.gain.value=v;
+      const lfo=actx.createOscillator(); lfo.frequency.value=.05+i*.013;
+      const lg=actx.createGain(); lg.gain.value=2.6;
+      lfo.connect(lg); lg.connect(o.detune); lfo.start();
+      o.connect(g); g.connect(bus); o.start();
+    });
+    // deep slow pulse
+    const beat=()=>{ if(!actx) return;
+      const o=actx.createOscillator(); o.type='sine'; o.frequency.value=41.2;
+      const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(master);
+      const t=actx.currentTime;
+      g.gain.linearRampToValueAtTime(.22,t+.06); g.gain.exponentialRampToValueAtTime(.001,t+2.2);
+      o.start(t); o.stop(t+2.3); };
+    beat(); setInterval(beat,3800);   // lives for the whole session, not one cycle — keep out of ivls
+    master.gain.linearRampToValueAtTime(muted?0:.55, actx.currentTime+2.5);
+  }catch(e){ actx=null; }
+}
+function tone(seq,vol,type){
+  if(!actx||muted) return;
+  const t=actx.currentTime;
+  seq.forEach(([f,at,dur])=>{
+    const o=actx.createOscillator(); o.type=type||'sine'; o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(bus||master);
+    g.gain.linearRampToValueAtTime(vol,t+at+.02);
+    g.gain.exponentialRampToValueAtTime(.0008,t+at+dur);
+    o.start(t+at); o.stop(t+at+dur+.05);
+  });
+}
+const sfx={
+  boot:  ()=>tone([[392,0,.5],[523.25,.12,.5],[659.25,.24,.7]],.12),
+  detect:()=>tone([[659.25,0,.5],[987.77,.13,.6]],.11),
+  caution:()=>tone([[493.88,0,.4],[659.25,.14,.5]],.12),
+  alert: ()=>tone([[207.65,0,.3],[207.65,.34,.3],[207.65,.68,.42]],.2,'triangle'),
+  wake:  ()=>tone([[523.25,0,.45],[659.25,.1,.45],[783.99,.2,.6]],.11),
+};
+function warmPad(){
+  if(!actx||muted) return;
+  [130.81,164.81,196.00,246.94].forEach((f,i)=>{
+    const o=actx.createOscillator(); o.type=i<2?'sine':'triangle'; o.frequency.value=f;
+    const g=actx.createGain(); g.gain.value=0; o.connect(g); g.connect(bus);
+    const t=actx.currentTime;
+    g.gain.linearRampToValueAtTime(.045/(i*.35+1), t+3);
+    o.start(t); padNodes.push({o,g});
+  });
+}
+function stopPad(){
+  if(!actx) return;
+  padNodes.forEach(({o,g})=>{ try{
+    g.gain.linearRampToValueAtTime(0,actx.currentTime+.6); o.stop(actx.currentTime+.8);
+  }catch(e){} });
+  padNodes=[];
+}
+function duck(on){ if(master&&actx&&!muted) master.gain.linearRampToValueAtTime(on?.18:.55,actx.currentTime+.25); }
+
+// ════════════════ VOICE ════════════════
+let voice=null;
+function pickVoice(){ try{ const vs=speechSynthesis.getVoices();
+  voice = vs.find(v=>/Samantha|Google US English|Karen|Moira|Tessa|Victoria|Ava/i.test(v.name))
+       || vs.find(v=>v.lang&&v.lang.toLowerCase().startsWith('en')) || vs[0] || null; }catch(e){} }
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+function say(text,opts){
+  opts=opts||{};
+  if(!('speechSynthesis' in window)||muted) return;
+  duck(true);
+  const u=new SpeechSynthesisUtterance(text);
+  if(voice) u.voice=voice;
+  u.rate=opts.rate||1; u.pitch=opts.pitch||1;
+  u.onend=u.onerror=()=>duck(false);
+  try{ speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){ duck(false); }
+}
+
+// ════════════════ SCENE HELPERS ════════════════
+function litZone(z,hold){ z.classList.add('lit'); after(hold,()=>z.classList.remove('lit')); }
+
+let tickStart=0;
+function startDistanceTicker(){
+  tickStart=performance.now();
+  const iv=setInterval(()=>{
+    const p=Math.min((performance.now()-tickStart)/11700,1);
+    const m=(4.0-3.2*p);
+    if(hazard.classList.contains('znear')) return;       // STOP tag owns the text now
+    const zone = hazard.classList.contains('zmid') ? 'MID' : 'FAR';
+    detTag.textContent=`PERSON · ${zone} · ${m.toFixed(1)}M`;
+    if(p>=1) clearInterval(iv);
+  },120);
+  ivls.push(iv);
+}
+
+const ANSWER='Clear path ahead. A door on your left, approximately 3 meters.';
+
+// ════════════════ THE 90-SECOND TIMELINE ════════════════
+const DUR=90;
+const EVENTS=[
+  /* ── SCENE 1 · 0–8 · DARKNESS ── */
+  { t:1.8,  fn:()=> s1line.classList.add('in') },
+  { t:6.6,  fn:()=> s1line.classList.add('out') },
+
+  /* ── SCENE 2 · 8–18 · AXON ACTIVATES ── */
+  { t:8.0,  fn:()=>{ hardCut(view,true); hardCut(s1,false); sfx.boot();
+                     statTL.classList.add('in'); fcorners.forEach(c=>c.classList.add('in')); } },
+  { t:8.7,  fn:()=> corridor.classList.add('up') },
+  { t:9.6,  fn:()=>{ statBR.classList.add('in');
+                     scrambleText(statBR,'AXON v2 · YOLOv12 · ', 700);
+                     after(.75,()=>{ statBR.innerHTML='AXON v2 · YOLOv12 · <span class="ok">ACTIVE</span>'; }); } },
+  { t:10.6, fn:()=>{ litZone(zf,1.0); } },
+  { t:11.5, fn:()=>{ litZone(zm,1.0); sfx.detect(); } },
+  { t:12.4, fn:()=>{ litZone(zn,1.0); } },
+  { t:13.6, fn:()=>{ corridor.classList.add('scanning'); say('AXON online. Corridor mapped. I am watching the path ahead.',{pitch:1.04}); } },
+
+  /* ── SCENE 3 · 18–38 · HAZARD DETECTED ── */
+  { t:18.5, fn:()=>{ hazard.classList.add('go'); } },
+  { t:19.3, fn:()=>{ hazard.classList.add('detected'); sfx.detect();
+                     scrambleText(detTag,'PERSON · FAR · 4.0M',620);
+                     after(.7,startDistanceTicker); litZone(zf,1.4); } },
+  { t:20.0, fn:()=>{ alertbar.classList.add('in');
+                     typeText(alertText,'Person ahead, approaching',42);
+                     say('Person ahead, approaching.'); } },
+  { t:24.1, fn:()=>{ hazard.classList.add('zmid'); sfx.caution(); litZone(zm,4.6); } },
+  { t:29.0, fn:()=>{ hazard.classList.add('znear'); sfx.alert();
+                     detTag.textContent='⚠ STOP · PERSON NEAR';
+                     zn.classList.add('lit'); flash.classList.add('go');
+                     world.classList.add('jolt');
+                     alertbar.classList.add('warn');
+                     alertText.innerHTML='<span class="stop">Stop — person near</span>';
+                     say('Stop. Person near.',{rate:1.06}); } },
+  { t:30.6, fn:()=> world.classList.remove('jolt') },
+  { t:33.6, fn:()=>{ zn.classList.remove('lit'); flash.classList.remove('go'); } },
+  { t:35.0, fn:()=>{ alertbar.classList.remove('in','warn');
+                     say('Path clear.',{pitch:1.02}); } },
+
+  /* ── SCENE 4 · 38–58 · ASK AXON ── */
+  { t:38.6, fn:()=> tapIcon.classList.add('in') },
+  { t:40.4, fn:()=>{ tapIcon.classList.add('fired'); sfx.wake(); } },
+  { t:41.0, fn:()=>{ tapIcon.classList.remove('in'); qPill.classList.add('in');
+                     after(.35,()=>typeText(qText,"What's ahead of me?",46)); } },
+  { t:43.4, fn:()=>{ qPill.classList.add('frozen'); } },
+  { t:43.9, fn:()=>{ aPill.classList.add('in','scanning'); } },     // radar sweeps ×3 (0.4s each)
+  { t:45.2, fn:()=>{ aPill.classList.remove('scanning');
+                     tokenType(aText,ANSWER,()=>aPill.classList.add('answered'));
+                     say(ANSWER); } },
+  { t:55.6, fn:()=>{ qPill.classList.remove('in','frozen'); aPill.classList.remove('in'); } },
+
+  /* ── SCENE 5 · 58–70 · WALK WITHOUT FEAR ── */
+  { t:58.0, fn:()=>{ view.classList.add('zoom'); corridor.classList.add('calm'); warmPad(); } },
+  { t:60.2, fn:()=> tagline.querySelector('.brand').classList.add('in') },
+  { t:61.4, fn:()=>{ tagline.querySelector('.wwf').classList.add('in');
+                     say('AXON. Walk without fear.',{rate:.95}); } },
+  { t:68.4, fn:()=> tagline.classList.add('bye') },
+
+  /* ── SCENE 6 · 70–90 · END CARD ── */
+  { t:69.6, fn:()=>{ s6.classList.add('on'); view.classList.remove('on'); } },
+  { t:71.0, fn:()=> s6brand.classList.add('in') },
+  { t:72.6, fn:()=> pills.classList.add('in') },
+  { t:76.2, fn:()=> builtline.classList.add('in') },
+  { t:88.4, fn:()=> s6.classList.add('bye') },
+];
+
+function frame(now){
+  if(!running) return;
+  const t=((now-startT)/1000)%DUR;
+  if(t<lastT) resetCycle();
+  lastT=t;
+  for(let i=0;i<EVENTS.length;i++){
+    if(t>=EVENTS[i].t && !fired.has(i)){ fired.add(i); EVENTS[i].fn(); }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ════════════════ CONTROLS ════════════════
+const entry=$('entry');
+function begin(opts){
+  opts=opts||{};
+  entry.classList.add('gone');
+  if(!opts.silent){
+    buildSynth();
+    if(matchMedia('(pointer:coarse)').matches && 'speechSynthesis' in window){
+      try{ speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){}
+    }
+    const de=document.documentElement;
+    if(de.requestFullscreen) de.requestFullscreen().catch(()=>{});
+    else if(de.webkitRequestFullscreen) de.webkitRequestFullscreen();
+  }
+  running=true; startT=performance.now()-(opts.offset||0)*1000; lastT=1e9;
+  requestAnimationFrame(frame);
+}
+entry.addEventListener('click',()=>begin());
+$('muteBtn').addEventListener('click',e=>{
+  e.stopPropagation(); muted=!muted;
+  if(master&&actx) master.gain.linearRampToValueAtTime(muted?0:.55,actx.currentTime+.3);
+  if(muted){ stopPad(); if('speechSynthesis' in window) speechSynthesis.cancel(); }
+  e.currentTarget.textContent=muted?'♪ MUTED':'♪ SOUND ON';
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='r'||e.key==='R'){ startT=performance.now(); lastT=1e9; resetCycle(); }
+});
+
+// debug/deep-link: ?t=42 jumps into the timeline (muted, no fullscreen)
+const tParam=new URLSearchParams(location.search).get('t');
+if(tParam!==null){ muted=true; begin({silent:true, offset:Math.max(0,parseFloat(tParam)||0)}); }
+</script>
+</body>
+</html>
