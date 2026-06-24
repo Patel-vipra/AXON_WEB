@@ -4,3 +4,5 @@ __pycache__/
 start-server.command
 # original screenshots (clean-named copies are tracked)
 Screenshot*.png
+# large source video, kept local only (exceeds GitHub 100MB limit)
+*.mov
